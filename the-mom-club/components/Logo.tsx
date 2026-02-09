@@ -19,7 +19,7 @@ export function Logo({ size = "medium", style }: Props) {
   return (
     <View style={[styles.wrapper, style]}>
       <Image
-        source={require("../assets/images/mom-club-logo.png")}
+        source={require("../assets/images/mom_club_logo.png")}
         style={{ width: s.width, height: s.height }}
         resizeMode="contain"
       />

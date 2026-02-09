@@ -584,7 +584,12 @@ This project was developed with a combination of AI assistance and manual engine
    - Alternative approaches and ideas
    - Documentation proofreading
    - SQL query optimization suggestions
-   
+
+3. **Replit AI** - Hosting and deployment
+   - Replit project setup and configuration
+   - Deployment and health-check troubleshooting
+   - Environment and run/build configuration for Replit
+
 4. **Supabase AI Assistant** - Database queries
    - RLS policy suggestions
    - SQL query optimization
@@ -704,6 +709,7 @@ Given **one additional week** of development time, here are the features we woul
 ### AI Assistants
 - **Claude Sonnet 4.5** by Anthropic - Primary coding and documentation assistant
 - **ChatGPT** by OpenAI - Secondary assistant for ideation
+- **Replit AI** - Hosting and deployment (Replit setup, health checks, build/run configuration)
 - **Supabase AI** - Database query assistance
 
 ### Inspiration & Resources

@@ -290,7 +290,7 @@ See [the-mom-club/README.md](the-mom-club/README.md) for complete license detail
 
 ## AI Development Disclosure
 
-This project was developed with AI assistance (Claude Sonnet 4.5, ChatGPT, GitHub Copilot):
+This project was developed with AI assistance (Claude Sonnet 4.5, ChatGPT, GitHub Copilot, Replit AI):
 
 | Component | AI Assistance | Manual Work |
 |-----------|---------------|-------------|

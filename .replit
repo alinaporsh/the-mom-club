@@ -1,5 +1,5 @@
 language = "nodejs"
-run = "cd the-mom-club && npm start"
+run = "cd the-mom-club && npm run build:web && npm run start:deploy"
 
 [nix]
 channel = "stable-22_11"
@@ -7,9 +7,13 @@ channel = "stable-22_11"
 [deploy]
 publicDir = "/the-mom-club"
 
+[deployment]
+build = "cd the-mom-club && npm run build:web"
+run = "cd the-mom-club && npm run start:deploy"
+
 [env]
-EXPO_PUBLIC_SUPABASE_URL=""
-EXPO_PUBLIC_SUPABASE_ANON_KEY=""
+EXPO_PUBLIC_SUPABASE_URL = "https://xjqibdprqtitblhzcpbt.supabase.co"
+EXPO_PUBLIC_SUPABASE_ANON_KEY = "sb_publishable_ww7RS0K2LyjXpR6Ay6_1UQ_rGxh45i5"
 
 [packager]
 language = "nodejs"
