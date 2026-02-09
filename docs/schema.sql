@@ -1,0 +1,3 @@
+-- Schema overview for README: see supabase/migrations/001_initial.sql for full migration.
+-- Tables: profiles, memberships, forum_posts, forum_comments, events, bookings.
+-- RLS enabled on all; roles: guest, free, member, admin. get_my_role() used in policies.

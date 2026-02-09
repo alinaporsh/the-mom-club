@@ -1,0 +1,19 @@
+language = "nodejs"
+run = "cd the-mom-club && npm start"
+
+[nix]
+channel = "stable-22_11"
+
+[deploy]
+publicDir = "/the-mom-club"
+
+[env]
+EXPO_PUBLIC_SUPABASE_URL=""
+EXPO_PUBLIC_SUPABASE_ANON_KEY=""
+
+[packager]
+language = "nodejs"
+ignoredPackages = ["unit_tests"]
+
+[gitHubImport]
+requiredFiles = [".replit", ".replit.nix"]
