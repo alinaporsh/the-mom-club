@@ -23,6 +23,7 @@
   - [Viewing Events and Booking Classes](#viewing-events-and-booking-classes)
 - [Architecture](#architecture)
 - [Supabase Schema](#supabase-schema)
+- [Preview Build (Android)](#preview-build-android)
 - [AI Tools Disclosure](#ai-tools-disclosure)
 - [Future Improvements](#future-improvements)
 - [Credits](#credits)
@@ -521,6 +522,18 @@ Database schema is version-controlled with migration files:
 - Run in order via Supabase SQL Editor
 
 For full schema documentation, see [Assignment Deliverable](../docs/ASSIGNMENT_PART2_PART3_Deliverable.md) and `supabase/migrations/`.
+
+---
+
+## Preview Build (Android)
+
+TestFlight (iOS) was not used for this project because it requires a paid Apple Developer account. Instead, an **Android preview build** was created with EAS Build for testing and demonstration.
+
+| Item        | Details |
+| ----------- | ------- |
+| **Platform** | Android (preview) |
+| **Build**    | EAS Build |
+| **Link**     | [Android preview build on Expo](https://expo.dev/accounts/alinayasmine/projects/the-mom-club/builds/5ce57372-56b0-4b1d-af91-be8386ce2040) |
 
 ---
 

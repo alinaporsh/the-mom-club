@@ -196,8 +196,8 @@ See [Admin Management Guide](docs/ADMIN_MANAGEMENT.md) for complete admin setup 
 
 ### Mobile App
 - **Development**: Expo Go app (scan QR code)
-- **Production**: EAS Build for TestFlight (iOS) and Google Play (Android)
-- **Command**: `eas build --platform all`
+- **Production**: EAS Build for TestFlight (iOS) and Google Play (Android); **command**: `eas build --platform all`
+- **This project**: TestFlight was not used (paid Apple Developer account). An **Android preview build** was created instead: [Android preview build on Expo](https://expo.dev/accounts/alinayasmine/projects/the-mom-club/builds/5ce57372-56b0-4b1d-af91-be8386ce2040).
 
 ### Backend
 - **Database**: Hosted on Supabase (free tier for development, Pro for production)
