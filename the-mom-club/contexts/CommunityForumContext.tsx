@@ -49,6 +49,7 @@ type ForumContextValue = {
   getPostById: (id: string) => ForumPost | undefined;
   toggleJoinCommunity: (communityId: string) => void;
   togglePostVote: (postId: string, direction: "up" | "down") => void;
+  deletePost: (postId: string) => void;
   addPost: (
     communityId: string,
     title: string,
@@ -373,6 +374,10 @@ export function CommunityForumProvider({ children }: Props) {
     );
   };
 
+  const deletePost = (postId: string) => {
+    setPosts((prev) => prev.filter((post) => post.id !== postId));
+  };
+
   const toggleCommentVote = (
     postId: string,
     commentId: string,
@@ -425,6 +430,7 @@ export function CommunityForumProvider({ children }: Props) {
     ...helpers,
     toggleJoinCommunity,
     togglePostVote,
+    deletePost,
     addPost,
     addReply,
     toggleCommentVote,

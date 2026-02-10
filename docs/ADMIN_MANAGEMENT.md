@@ -34,6 +34,7 @@ Administrators have the following elevated permissions enforced at the database 
 ### Event Management
 - **Create events/classes**: Add new workshops, classes, and events
 - **Update any event**: Modify event details, times, instructors, pricing
+- **Manage event metadata**: Set pricing, category, audience, and attendance mode (online vs in-person)
 - **Delete events**: Remove canceled or completed events
 - **View all bookings**: See who has booked each event
 
@@ -610,7 +611,7 @@ Understanding the differences between user roles:
 
 ### Internal Documentation
 - **[Assignment Deliverable (architecture & schema)](ASSIGNMENT_PART2_PART3_Deliverable.md)** - System diagram, database ERD, RLS
-- **[Database Schema](../supabase/migrations/001_initial.sql)** - Complete database structure
+- **[Database Schema](../supabase/migrations/001_initial.sql)** - Base database structure (see later migrations for pricing, categories, attendance mode, and planning status)
 - **[RLS Policies](../supabase/migrations/003_admin_policies.sql)** - Security policy definitions
 - **[Edge Functions](../supabase/functions/)** - Serverless function implementations
 - **[Project Timeline](../PROJECT_TIMELINE.md)** - Development timeline and milestones

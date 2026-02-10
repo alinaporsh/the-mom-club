@@ -129,7 +129,9 @@ graph TD
 
 - **Method:** Email / OTP (magic link or code).
 - **Roles (in `memberships.role`):** guest, free, member, admin.
+- **User statuses (in `profiles.status` / `user_status` enum):** pregnant, new_mom, planning.
 - **Flow:** Sign in → profile created (trigger) → onboarding → Edge Function sets profile + creates membership (free). Role is read from `memberships` for all gating.
+- **Signup helper:** Database function `public.email_exists(TEXT)` prevents existing users from going through the sign-up flow again.
 
 ---
 
@@ -143,6 +145,8 @@ Defined before build so schema and RLS match:
 | **Free** | Signed up, not paid | Read, post, comment | Read only | No | Own profile, upgrade CTA |
 | **Member** | Paid | Read, post, comment | Read, book | Yes | Own profile, membership |
 | **Admin** | Elevated | + Moderate (delete any) | + Manage (CRUD) | + All bookings | + All profiles/memberships |
+
+User status (`profiles.status`) uses the `user_status` enum with values `pregnant`, `new_mom`, and `planning` (for users who are still planning and not yet pregnant or a new mom).
 
 ---
 
@@ -185,7 +189,15 @@ erDiagram
     events {
         uuid id
         text title
+        text description
         timestamptz starts_at
+        timestamptz ends_at
+        text instructor
+        text location
+        numeric price_qar
+        text category
+        user_status audience
+        text attendance_mode
     }
     bookings {
         uuid id

@@ -1,3 +1,10 @@
--- Schema overview for README: see supabase/migrations/001_initial.sql for full migration.
+-- Schema overview for README: see supabase/migrations/001_initial.sql for base schema
+-- and later migrations (009+ for pricing & bookings, 010 for email_exists, 011–013 for
+-- planning status and event metadata).
 -- Tables: profiles, memberships, forum_posts, forum_comments, events, bookings.
 -- RLS enabled on all; roles: guest, free, member, admin. get_my_role() used in policies.
+-- Additional fields from later migrations:
+--   events.price_qar, events.category, events.audience, events.attendance_mode
+--   profiles.status supports 'planning' in addition to 'pregnant' and 'new_mom'
+-- Helper function:
+--   public.email_exists(p_email TEXT) RETURNS BOOLEAN – used to prevent duplicate signups.

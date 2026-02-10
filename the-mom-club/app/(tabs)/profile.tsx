@@ -17,6 +17,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { useQueryClient } from "@tanstack/react-query";
 import { Ionicons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
+import { Calendar } from "react-native-calendars";
 import { colors } from "../theme";
 import { useAuth } from "../../contexts/AuthContext";
 import { supabase } from "../../lib/supabase";
@@ -36,7 +37,11 @@ export default function ProfileScreen() {
   const [editStatus, setEditStatus] = useState<"pregnant" | "new_mom">("pregnant");
   const [editDueDate, setEditDueDate] = useState("");
   const [editBabyAge, setEditBabyAge] = useState("");
+  const [babyAgeNumber, setBabyAgeNumber] = useState<number | null>(null);
+  const [babyAgeUnit, setBabyAgeUnit] = useState<"weeks" | "months">("months");
   const [saving, setSaving] = useState(false);
+  const [focusedField, setFocusedField] = useState<"name" | null>(null);
+  const [showDueDatePicker, setShowDueDatePicker] = useState(false);
 
   async function handleSignOut() {
     await supabase.auth.signOut();
@@ -48,8 +53,23 @@ export default function ProfileScreen() {
     // Pre-populate with current values
     setEditName(state.profile?.name || "");
     setEditStatus(state.profile?.status || "pregnant");
-    setEditDueDate(""); // We'll load this from profile if needed
-    setEditBabyAge(""); // We'll load this from profile if needed
+    setEditDueDate(state.profile?.due_date ?? "");
+    const currentBabyAge = state.profile?.baby_age ?? "";
+    setEditBabyAge(currentBabyAge);
+
+    // Try to parse "3 months" / "2 weeks" style values from onboarding
+    const match = currentBabyAge.match(/(\d+)\s+(week|weeks|month|months)/i);
+    if (match) {
+      const parsedNumber = parseInt(match[1], 10);
+      const parsedUnit = match[2].toLowerCase().startsWith("week")
+        ? "weeks"
+        : "months";
+      setBabyAgeNumber(Number.isNaN(parsedNumber) ? null : parsedNumber);
+      setBabyAgeUnit(parsedUnit);
+    } else {
+      setBabyAgeNumber(null);
+      setBabyAgeUnit("months");
+    }
     setShowEditModal(true);
   }
 
@@ -77,9 +97,15 @@ export default function ProfileScreen() {
       if (editStatus === "pregnant" && editDueDate.trim()) {
         updateData.due_date = editDueDate.trim();
         updateData.baby_age = null;
-      } else if (editStatus === "new_mom" && editBabyAge.trim()) {
-        updateData.baby_age = editBabyAge.trim();
-        updateData.due_date = null;
+      } else if (editStatus === "new_mom") {
+        if (babyAgeNumber) {
+          updateData.baby_age = `${babyAgeNumber} ${babyAgeUnit}`;
+          updateData.due_date = null;
+        } else if (editBabyAge.trim()) {
+          // Fallback for any legacy free‑text values
+          updateData.baby_age = editBabyAge.trim();
+          updateData.due_date = null;
+        }
       }
 
       const { error } = await supabase
@@ -297,12 +323,14 @@ export default function ProfileScreen() {
               <View style={styles.formSection}>
                 <Text style={styles.formLabel}>Name *</Text>
                 <TextInput
-                  style={styles.input}
+                  style={[styles.input, focusedField === "name" && styles.inputFocused]}
                   placeholder="Your name"
                   placeholderTextColor="#B8A99A"
                   value={editName}
                   onChangeText={setEditName}
                   editable={!saving}
+                  onFocus={() => setFocusedField("name")}
+                  onBlur={() => setFocusedField(null)}
                 />
               </View>
 
@@ -311,7 +339,11 @@ export default function ProfileScreen() {
                 <Text style={styles.formLabel}>Status</Text>
                 <View style={styles.statusRow}>
                   <Pressable
-                    style={[styles.statusPill, editStatus === "pregnant" && styles.statusPillActive]}
+                    style={({ pressed }) => [
+                      styles.statusPill,
+                      editStatus === "pregnant" && styles.statusPillActive,
+                      pressed && styles.statusPillPressed,
+                    ]}
                     onPress={() => setEditStatus("pregnant")}
                     disabled={saving}
                   >
@@ -320,7 +352,11 @@ export default function ProfileScreen() {
                     </Text>
                   </Pressable>
                   <Pressable
-                    style={[styles.statusPill, editStatus === "new_mom" && styles.statusPillActive]}
+                    style={({ pressed }) => [
+                      styles.statusPill,
+                      editStatus === "new_mom" && styles.statusPillActive,
+                      pressed && styles.statusPillPressed,
+                    ]}
                     onPress={() => setEditStatus("new_mom")}
                     disabled={saving}
                   >
@@ -335,14 +371,34 @@ export default function ProfileScreen() {
               {editStatus === "pregnant" && (
                 <View style={styles.formSection}>
                   <Text style={styles.formLabel}>Due Date</Text>
-                  <TextInput
-                    style={styles.input}
-                    placeholder="YYYY-MM-DD (e.g. 2025-12-19)"
-                    placeholderTextColor="#B8A99A"
-                    value={editDueDate}
-                    onChangeText={setEditDueDate}
-                    editable={!saving}
-                  />
+                  <Pressable
+                    style={[
+                      styles.input,
+                      styles.dateInput,
+                      showDueDatePicker && styles.inputFocused,
+                    ]}
+                    onPress={() => {
+                      if (!saving) {
+                        setShowDueDatePicker(true);
+                      }
+                    }}
+                    disabled={saving}
+                  >
+                    <Text
+                      style={
+                        editDueDate
+                          ? styles.inputValueText
+                          : styles.inputPlaceholderText
+                      }
+                    >
+                      {editDueDate || "YYYY-MM-DD (e.g. 2025-12-19)"}
+                    </Text>
+                    <Ionicons
+                      name="calendar-outline"
+                      size={20}
+                      color={colors.textSecondary}
+                    />
+                  </Pressable>
                 </View>
               )}
 
@@ -350,16 +406,128 @@ export default function ProfileScreen() {
               {editStatus === "new_mom" && (
                 <View style={styles.formSection}>
                   <Text style={styles.formLabel}>Baby's Age</Text>
-                  <TextInput
-                    style={styles.input}
-                    placeholder="e.g. 3 months"
-                    placeholderTextColor="#B8A99A"
-                    value={editBabyAge}
-                    onChangeText={setEditBabyAge}
-                    editable={!saving}
-                  />
+                  <View style={styles.babyAgeRow}>
+                    <View style={styles.babyAgeNumbers}>
+                      {Array.from({ length: 24 }, (_, i) => i + 1).map((num) => (
+                        <Pressable
+                          key={num}
+                          style={[
+                            styles.babyAgePill,
+                            babyAgeNumber === num && styles.babyAgePillActive,
+                          ]}
+                          onPress={() => {
+                            setBabyAgeNumber(num);
+                            setEditBabyAge(`${num} ${babyAgeUnit}`);
+                          }}
+                          disabled={saving}
+                        >
+                          <Text
+                            style={[
+                              styles.babyAgePillText,
+                              babyAgeNumber === num && styles.babyAgePillTextActive,
+                            ]}
+                          >
+                            {num}
+                          </Text>
+                        </Pressable>
+                      ))}
+                    </View>
+                    <View style={styles.babyAgeUnitRow}>
+                      <Pressable
+                        style={[
+                          styles.statusPill,
+                          styles.babyAgeUnitPill,
+                          babyAgeUnit === "weeks" && styles.statusPillActive,
+                        ]}
+                        onPress={() => {
+                          setBabyAgeUnit("weeks");
+                          if (babyAgeNumber) {
+                            setEditBabyAge(`${babyAgeNumber} weeks`);
+                          }
+                        }}
+                        disabled={saving}
+                      >
+                        <Text
+                          style={[
+                            styles.statusPillText,
+                            babyAgeUnit === "weeks" && styles.statusPillTextActive,
+                          ]}
+                        >
+                          weeks
+                        </Text>
+                      </Pressable>
+                      <Pressable
+                        style={[
+                          styles.statusPill,
+                          styles.babyAgeUnitPill,
+                          babyAgeUnit === "months" && styles.statusPillActive,
+                        ]}
+                        onPress={() => {
+                          setBabyAgeUnit("months");
+                          if (babyAgeNumber) {
+                            setEditBabyAge(`${babyAgeNumber} months`);
+                          }
+                        }}
+                        disabled={saving}
+                      >
+                        <Text
+                          style={[
+                            styles.statusPillText,
+                            babyAgeUnit === "months" && styles.statusPillTextActive,
+                          ]}
+                        >
+                          months
+                        </Text>
+                      </Pressable>
+                    </View>
+                  </View>
                 </View>
               )}
+
+              {/* Due date picker */}
+              <Modal
+                visible={showDueDatePicker}
+                transparent
+                animationType="fade"
+                onRequestClose={() => setShowDueDatePicker(false)}
+              >
+                <View style={styles.datePickerOverlay}>
+                  <View style={styles.datePickerCard}>
+                    <Text style={styles.datePickerTitle}>Select due date</Text>
+                    <Calendar
+                      onDayPress={(day) => {
+                        setEditDueDate(day.dateString);
+                        setShowDueDatePicker(false);
+                      }}
+                      markedDates={
+                        editDueDate
+                          ? {
+                              [editDueDate]: {
+                                selected: true,
+                                selectedColor: colors.primary,
+                              },
+                            }
+                          : undefined
+                      }
+                      theme={{
+                        selectedDayBackgroundColor: colors.primary,
+                        todayTextColor: colors.primary,
+                        arrowColor: colors.primary,
+                        textSectionTitleColor: colors.textSecondary,
+                      }}
+                    />
+                    <Pressable
+                      style={({ pressed }) => [
+                        styles.datePickerCloseButton,
+                        pressed && styles.buttonPressed,
+                      ]}
+                      onPress={() => setShowDueDatePicker(false)}
+                    >
+                      <Text style={styles.datePickerCloseButtonText}>Done</Text>
+                    </Pressable>
+                  </View>
+                </View>
+              </Modal>
 
               {/* Save button */}
               <Pressable
@@ -484,24 +652,45 @@ const styles = StyleSheet.create({
   planName: { fontSize: 18, fontWeight: "600", color: colors.textPrimary },
   planPrice: { fontSize: 28, fontWeight: "700", color: colors.textSecondary, marginTop: 4 },
   planDesc: { fontSize: 14, color: colors.textSecondary, marginTop: 8, lineHeight: 20 },
-  formSection: { marginBottom: 16 },
+  formSection: { marginBottom: 20 },
   formLabel: {
     fontSize: 14,
-    color: colors.textPrimary,
-    marginBottom: 8,
+    color: colors.textSecondary,
+    marginBottom: 6,
     fontWeight: "500",
     marginLeft: 4,
   },
   formRow: { flexDirection: "row" },
   input: {
     backgroundColor: "#FFF",
-    borderRadius: 30,
-    paddingVertical: 14,
-    paddingHorizontal: 20,
+    borderRadius: 16,
+    paddingVertical: 12,
+    paddingHorizontal: 16,
     fontSize: 16,
     color: colors.textPrimary,
     borderWidth: 1,
-    borderColor: "#E8E0D5",
+    borderColor: colors.borderSubtle,
+  },
+  inputFocused: {
+    borderColor: colors.primary,
+    shadowColor: colors.primary,
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.15,
+    shadowRadius: 6,
+    elevation: 2,
+  },
+  dateInput: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+  },
+  inputPlaceholderText: {
+    fontSize: 16,
+    color: "#B8A99A",
+  },
+  inputValueText: {
+    fontSize: 16,
+    color: colors.textPrimary,
   },
   cardInputRow: {
     flexDirection: "row",
@@ -545,23 +734,100 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   statusPill: {
-    paddingVertical: 12,
-    paddingHorizontal: 20,
-    borderRadius: 30,
-    borderWidth: 1.5,
-    borderColor: "#A8C6B6",
+    flex: 1,
+    paddingVertical: 10,
+    paddingHorizontal: 16,
+    borderRadius: 999,
+    borderWidth: 1,
+    borderColor: colors.borderSubtle,
     backgroundColor: "#FFF",
+    alignItems: "center",
+    justifyContent: "center",
   },
   statusPillActive: {
-    backgroundColor: "#A8C6B6",
-    borderColor: "#A8C6B6",
+    backgroundColor: colors.primary,
+    borderColor: colors.primary,
   },
   statusPillText: {
     fontSize: 15,
-    color: "#8B7355",
+    color: colors.textSecondary,
     fontWeight: "500",
   },
   statusPillTextActive: {
     color: "#FFF",
+  },
+  statusPillPressed: {
+    opacity: 0.9,
+  },
+  babyAgeRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "flex-start",
+  },
+  babyAgeNumbers: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    flex: 1,
+    gap: 8,
+  },
+  babyAgePill: {
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: colors.borderSubtle,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    backgroundColor: "#FFF",
+  },
+  babyAgePillActive: {
+    backgroundColor: colors.primary,
+    borderColor: colors.primary,
+  },
+  babyAgePillText: {
+    fontSize: 14,
+    color: colors.textSecondary,
+  },
+  babyAgePillTextActive: {
+    color: "#FFF",
+  },
+  babyAgeUnitRow: {
+    marginLeft: 12,
+    justifyContent: "flex-start",
+    alignItems: "flex-start",
+    gap: 8,
+  },
+  babyAgeUnitPill: {
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+  },
+  datePickerOverlay: {
+    flex: 1,
+    backgroundColor: "rgba(0,0,0,0.3)",
+    justifyContent: "center",
+    padding: 24,
+  },
+  datePickerCard: {
+    backgroundColor: "#FFF",
+    borderRadius: 20,
+    padding: 16,
+  },
+  datePickerTitle: {
+    fontSize: 16,
+    fontWeight: "600",
+    color: colors.textPrimary,
+    marginBottom: 8,
+    textAlign: "center",
+  },
+  datePickerCloseButton: {
+    marginTop: 12,
+    alignSelf: "center",
+    paddingHorizontal: 24,
+    paddingVertical: 10,
+    borderRadius: 20,
+    backgroundColor: colors.primary,
+  },
+  datePickerCloseButtonText: {
+    color: "#FFF",
+    fontSize: 15,
+    fontWeight: "600",
   },
 });

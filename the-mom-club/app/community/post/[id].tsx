@@ -11,11 +11,12 @@ import {
   Image,
   Alert,
 } from "react-native";
+import { KeyboardAvoidingView, Platform } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { useCommunityForum, ForumComment } from "../../../contexts/CommunityForumContext";
-import { useAuth } from "../../../contexts/AuthContext";
+import { useAuth, useIsAdmin } from "../../../contexts/AuthContext";
 import { colors } from "../../theme";
 import * as Haptics from "expo-haptics";
 import * as ImagePicker from "expo-image-picker";
@@ -30,6 +31,7 @@ export default function PostDetailScreen() {
     togglePostVote,
     addReply,
     toggleCommentVote,
+    deletePost,
   } = useCommunityForum();
   const scrollRef = useRef<ScrollView | null>(null);
   const [commentsOffset, setCommentsOffset] = useState(0);
@@ -45,6 +47,7 @@ export default function PostDetailScreen() {
   const community = post ? getCommunityById(post.communityId) : undefined;
 
   const isGuest = state.isGuest || !state.session;
+  const isAdmin = useIsAdmin();
 
   const showAuthRequiredAlert = () => {
     Alert.alert(
@@ -325,6 +328,24 @@ export default function PostDetailScreen() {
     );
   };
 
+  const handleDeletePost = () => {
+    Alert.alert(
+      "Delete thread",
+      "Are you sure you want to delete this thread and all of its comments? This cannot be undone.",
+      [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Delete",
+          style: "destructive",
+          onPress: () => {
+            deletePost(post.id);
+            router.back();
+          },
+        },
+      ]
+    );
+  };
+
   return (
     <SafeAreaView style={styles.container} edges={["top", "bottom"]}>
       <View style={styles.header}>
@@ -350,196 +371,214 @@ export default function PostDetailScreen() {
             })}
           </Text>
         </View>
+        {isAdmin && (
+          <Pressable
+            style={({ pressed }) => [
+              styles.deleteButton,
+              pressed && styles.deleteButtonPressed,
+            ]}
+            onPress={handleDeletePost}
+          >
+            <Ionicons name="trash-outline" size={18} color="#E74C3C" />
+          </Pressable>
+        )}
       </View>
 
-      <ScrollView
-        ref={scrollRef}
-        style={styles.scroll}
-        contentContainerStyle={styles.scrollContent}
-        onScroll={handleScroll}
-        scrollEventThrottle={16}
+      <KeyboardAvoidingView
+        style={styles.keyboard}
+        behavior={Platform.OS === "ios" ? "padding" : "height"}
+        keyboardVerticalOffset={Platform.OS === "ios" ? 80 : 0}
       >
-        <View style={styles.postCard}>
-          <View style={styles.postHeaderRow}>
-            <View style={styles.postAvatar}>
-              <Text style={styles.postAvatarInitial}>
-                {post.authorName.charAt(0).toUpperCase()}
-              </Text>
-            </View>
-            <View style={styles.postHeaderText}>
-              <Text style={styles.postTitle}>{post.title}</Text>
-              <Text style={styles.postMetaText}>
-                <Text style={styles.postMetaAuthor}>Posted by {post.authorName}</Text>
-                <Text style={styles.postMetaSeparator}> • </Text>
-                <Text style={styles.postMetaCommunity}>{community.name}</Text>
-                <Text style={styles.postMetaSeparator}> • </Text>
-                <Text style={styles.postMetaDate}>
-                  {new Date(post.createdAt).toLocaleDateString([], {
-                    day: "numeric",
-                    month: "short",
-                    year: "numeric",
-                  })}
-                </Text>
-              </Text>
-            </View>
-          </View>
-          <Text style={styles.postBody}>{post.body}</Text>
-          {post.mediaUri && (
-            <View style={styles.mediaWrapper}>
-              <Image
-                source={{ uri: post.mediaUri }}
-                style={styles.media}
-                resizeMode="cover"
-              />
-            </View>
-          )}
-          <View style={styles.actionsRow}>
-            <Pressable
-              style={({ pressed }) => [
-                styles.voteButton,
-                pressed && styles.voteButtonPressed,
-              ]}
-              onPress={() => {
-                if (isGuest) {
-                  showAuthRequiredAlert();
-                  return;
-                }
-                Haptics.selectionAsync();
-                togglePostVote(post.id, "up");
-              }}
-            >
-              <Ionicons
-                name="arrow-up"
-                size={18}
-                color={post.userVote === "up" ? colors.primary : colors.textSecondary}
-              />
-            </Pressable>
-            <Text style={styles.voteCount}>{post.voteCount}</Text>
-            <Pressable
-              style={({ pressed }) => [
-                styles.voteButton,
-                pressed && styles.voteButtonPressed,
-              ]}
-              onPress={() => {
-                if (isGuest) {
-                  showAuthRequiredAlert();
-                  return;
-                }
-                Haptics.selectionAsync();
-                togglePostVote(post.id, "down");
-              }}
-            >
-              <Ionicons
-                name="arrow-down"
-                size={18}
-                color={post.userVote === "down" ? colors.primary : colors.textSecondary}
-              />
-            </Pressable>
-            <Pressable
-              style={({ pressed }) => [
-                styles.commentButton,
-                pressed && styles.commentButtonPressed,
-              ]}
-              onPress={handleScrollToComments}
-            >
-              <Ionicons
-                name="chatbubble-ellipses-outline"
-                size={16}
-                color={colors.textSecondary}
-              />
-              <Text style={styles.commentButtonText}>
-                {post.commentCount} comments
-              </Text>
-            </Pressable>
-          </View>
-        </View>
-
-        <View
-          style={styles.commentsHeaderWrapper}
-          onLayout={(event) =>
-            setCommentsOffset(event.nativeEvent.layout.y - 80)
-          }
+        <ScrollView
+          ref={scrollRef}
+          style={styles.scroll}
+          contentContainerStyle={styles.scrollContent}
+          onScroll={handleScroll}
+          scrollEventThrottle={16}
+          keyboardShouldPersistTaps="handled"
         >
-          <Text style={styles.commentsTitle}>
-            Comments ({post.commentCount})
-          </Text>
-        </View>
-
-        {topLevelComments.length === 0 ? (
-          <View style={styles.emptyComments}>
-            <Text style={styles.emptyCommentsTitle}>No comments yet</Text>
-            <Text style={styles.emptyCommentsSubtitle}>
-              Be the first to start the conversation.
-            </Text>
-          </View>
-        ) : (
-          <View style={styles.commentsList}>
-            {topLevelComments.map((c) => renderCommentTree(c, 0))}
-          </View>
-        )}
-
-        {!isGuest && (
-          <View style={styles.newCommentContainer}>
-            <Text style={styles.newCommentLabel}>Add a comment</Text>
-            <View style={styles.newCommentRow}>
-              <TextInput
-                style={styles.newCommentInput}
-                placeholder="Share your thoughts..."
-                placeholderTextColor="#B8A99A"
-                value={newCommentText}
-                onChangeText={setNewCommentText}
-                multiline
-              />
-              <Pressable
-                style={({ pressed }) => [
-                  styles.newCommentAttachButton,
-                  pressed && styles.newCommentAttachButtonPressed,
-                ]}
-                onPress={() => pickImage(setNewCommentImageUri)}
-              >
-                <Ionicons name="image-outline" size={18} color={colors.primary} />
-              </Pressable>
-              <Pressable
-                style={({ pressed }) => [
-                  styles.newCommentSendButton,
-                  pressed && styles.newCommentSendButtonPressed,
-                  !newCommentText.trim() && styles.newCommentSendButtonDisabled,
-                ]}
-                onPress={handleSubmitNewComment}
-                disabled={!newCommentText.trim()}
-              >
-                <Ionicons name="send" size={16} color="#FFF" />
-              </Pressable>
+          <View style={styles.postCard}>
+            <View style={styles.postHeaderRow}>
+              <View style={styles.postAvatar}>
+                <Text style={styles.postAvatarInitial}>
+                  {post.authorName.charAt(0).toUpperCase()}
+                </Text>
+              </View>
+              <View style={styles.postHeaderText}>
+                <Text style={styles.postTitle}>{post.title}</Text>
+                <Text style={styles.postMetaText}>
+                  <Text style={styles.postMetaAuthor}>Posted by {post.authorName}</Text>
+                  <Text style={styles.postMetaSeparator}> • </Text>
+                  <Text style={styles.postMetaCommunity}>{community.name}</Text>
+                  <Text style={styles.postMetaSeparator}> • </Text>
+                  <Text style={styles.postMetaDate}>
+                    {new Date(post.createdAt).toLocaleDateString([], {
+                      day: "numeric",
+                      month: "short",
+                      year: "numeric",
+                    })}
+                  </Text>
+                </Text>
+              </View>
             </View>
-            {newCommentImageUri && (
-              <View style={styles.newCommentPreviewWrapper}>
+            <Text style={styles.postBody}>{post.body}</Text>
+            {post.mediaUri && (
+              <View style={styles.mediaWrapper}>
                 <Image
-                  source={{ uri: newCommentImageUri }}
-                  style={styles.newCommentPreviewImage}
+                  source={{ uri: post.mediaUri }}
+                  style={styles.media}
                   resizeMode="cover"
                 />
               </View>
             )}
+            <View style={styles.actionsRow}>
+              <Pressable
+                style={({ pressed }) => [
+                  styles.voteButton,
+                  pressed && styles.voteButtonPressed,
+                ]}
+                onPress={() => {
+                  if (isGuest) {
+                    showAuthRequiredAlert();
+                    return;
+                  }
+                  Haptics.selectionAsync();
+                  togglePostVote(post.id, "up");
+                }}
+              >
+                <Ionicons
+                  name="arrow-up"
+                  size={18}
+                  color={post.userVote === "up" ? colors.primary : colors.textSecondary}
+                />
+              </Pressable>
+              <Text style={styles.voteCount}>{post.voteCount}</Text>
+              <Pressable
+                style={({ pressed }) => [
+                  styles.voteButton,
+                  pressed && styles.voteButtonPressed,
+                ]}
+                onPress={() => {
+                  if (isGuest) {
+                    showAuthRequiredAlert();
+                    return;
+                  }
+                  Haptics.selectionAsync();
+                  togglePostVote(post.id, "down");
+                }}
+              >
+                <Ionicons
+                  name="arrow-down"
+                  size={18}
+                  color={post.userVote === "down" ? colors.primary : colors.textSecondary}
+                />
+              </Pressable>
+              <Pressable
+                style={({ pressed }) => [
+                  styles.commentButton,
+                  pressed && styles.commentButtonPressed,
+                ]}
+                onPress={handleScrollToComments}
+              >
+                <Ionicons
+                  name="chatbubble-ellipses-outline"
+                  size={16}
+                  color={colors.textSecondary}
+                />
+                <Text style={styles.commentButtonText}>
+                  {post.commentCount} comments
+                </Text>
+              </Pressable>
+            </View>
           </View>
-        )}
 
-        {isGuest && (
-          <View style={styles.signUpPrompt}>
-            <Text style={styles.signUpPromptText}>
-              Sign up for free to join the conversation and post comments.
+          <View
+            style={styles.commentsHeaderWrapper}
+            onLayout={(event) =>
+              setCommentsOffset(event.nativeEvent.layout.y - 80)
+            }
+          >
+            <Text style={styles.commentsTitle}>
+              Comments ({post.commentCount})
             </Text>
-            <Pressable
-              style={({ pressed }) => [
-                styles.signUpButton,
-                pressed && styles.signUpButtonPressed,
-              ]}
-              onPress={() => router.push("/auth")}
-            >
-              <Text style={styles.signUpButtonText}>Sign Up</Text>
-            </Pressable>
           </View>
-        )}
-      </ScrollView>
+
+          {topLevelComments.length === 0 ? (
+            <View style={styles.emptyComments}>
+              <Text style={styles.emptyCommentsTitle}>No comments yet</Text>
+              <Text style={styles.emptyCommentsSubtitle}>
+                Be the first to start the conversation.
+              </Text>
+            </View>
+          ) : (
+            <View style={styles.commentsList}>
+              {topLevelComments.map((c) => renderCommentTree(c, 0))}
+            </View>
+          )}
+
+          {!isGuest && (
+            <View style={styles.newCommentContainer}>
+              <Text style={styles.newCommentLabel}>Add a comment</Text>
+              <View style={styles.newCommentRow}>
+                <TextInput
+                  style={styles.newCommentInput}
+                  placeholder="Share your thoughts..."
+                  placeholderTextColor="#B8A99A"
+                  value={newCommentText}
+                  onChangeText={setNewCommentText}
+                  multiline
+                />
+                <Pressable
+                  style={({ pressed }) => [
+                    styles.newCommentAttachButton,
+                    pressed && styles.newCommentAttachButtonPressed,
+                  ]}
+                  onPress={() => pickImage(setNewCommentImageUri)}
+                >
+                  <Ionicons name="image-outline" size={18} color={colors.primary} />
+                </Pressable>
+                <Pressable
+                  style={({ pressed }) => [
+                    styles.newCommentSendButton,
+                    pressed && styles.newCommentSendButtonPressed,
+                    !newCommentText.trim() && styles.newCommentSendButtonDisabled,
+                  ]}
+                  onPress={handleSubmitNewComment}
+                  disabled={!newCommentText.trim()}
+                >
+                  <Ionicons name="send" size={16} color="#FFF" />
+                </Pressable>
+              </View>
+              {newCommentImageUri && (
+                <View style={styles.newCommentPreviewWrapper}>
+                  <Image
+                    source={{ uri: newCommentImageUri }}
+                    style={styles.newCommentPreviewImage}
+                    resizeMode="cover"
+                  />
+                </View>
+              )}
+            </View>
+          )}
+
+          {isGuest && (
+            <View style={styles.signUpPrompt}>
+              <Text style={styles.signUpPromptText}>
+                Sign up for free to join the conversation and post comments.
+              </Text>
+              <Pressable
+                style={({ pressed }) => [
+                  styles.signUpButton,
+                  pressed && styles.signUpButtonPressed,
+                ]}
+                onPress={() => router.push("/auth")}
+              >
+                <Text style={styles.signUpButtonText}>Sign Up</Text>
+              </Pressable>
+            </View>
+          )}
+        </ScrollView>
+      </KeyboardAvoidingView>
     </SafeAreaView>
   );
 }
@@ -579,6 +618,15 @@ const styles = StyleSheet.create({
   headerText: {
     flex: 1,
   },
+  deleteButton: {
+    padding: 8,
+    borderRadius: 20,
+    marginLeft: 8,
+    backgroundColor: "#FFF0ED",
+  },
+  deleteButtonPressed: {
+    opacity: 0.7,
+  },
   communityName: {
     fontSize: 16,
     fontWeight: "600",
@@ -590,6 +638,9 @@ const styles = StyleSheet.create({
     marginTop: 2,
   },
   scroll: {
+    flex: 1,
+  },
+  keyboard: {
     flex: 1,
   },
   scrollContent: {
