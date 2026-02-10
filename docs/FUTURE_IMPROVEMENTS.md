@@ -76,7 +76,7 @@ These improvements should be tackled first as they provide the highest impact fo
 **Goal**: Make the community forum more engaging and feature-rich.
 
 **Implementation:**
-- Comment input directly on post detail screen (currently missing in MVP)
+- Enhance comment input on post detail screen (MVP has a basic composer; add richer UI, better keyboard handling, and attachments)
 - Like/reaction system for posts and comments
   - Database: Add `post_likes` and `comment_likes` tables
   - UI: Heart icon with count, animate on tap
