@@ -50,7 +50,7 @@ Then:
 
 - **Email/OTP Authentication** - Passwordless, secure login with email verification codes
 - **Role-Based Access Control** - Four distinct roles: Guest, Free, Member, Admin
-- **Community Forum** - Create posts, comment, and connect with other mothers
+- **Community Forum** - Create posts with tags and images, comment with image support, vote on content (mocked), filter by category
 - **Events & Classes** - Browse and book prenatal/postpartum workshops
 - **Profile Management** - Customize profile, track pregnancy status, upgrade membership
 - **Admin Tools** - Content moderation, event management, user administration
@@ -74,7 +74,7 @@ test-task-geex/
 │   └── lib/               # Utilities and configuration
 │       └── supabase.ts    # Supabase client setup
 ├── supabase/              # Backend configuration
-│   ├── migrations/        # Database schema versions (10 migrations)
+│   ├── migrations/        # Database schema versions (18 migrations)
 │   └── functions/         # Edge Functions (Deno)
 │       ├── onboarding-complete/
 │       └── validate-membership/
@@ -153,9 +153,9 @@ npx expo start
 ### Database Setup
 
 1. Create a Supabase project at [supabase.com](https://supabase.com)
-2. Run migrations in order via SQL Editor:
+2. Run migrations in order via SQL Editor or Supabase CLI:
    ```
-   001_initial.sql → 010_add_email_exists_function.sql
+   001_initial.sql → 018_forum_comment_images.sql
    ```
 3. Deploy edge functions:
    ```bash

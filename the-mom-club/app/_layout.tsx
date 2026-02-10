@@ -3,7 +3,6 @@ import "react-native-reanimated";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { queryClient } from "../lib/queryClient";
 import { AuthProvider } from "../contexts/AuthContext";
-import { CommunityForumProvider } from "../contexts/CommunityForumContext";
 
 function RootLayoutNav() {
   return (
@@ -20,9 +19,7 @@ export default function RootLayout() {
   return (
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
-        <CommunityForumProvider>
-          <RootLayoutNav />
-        </CommunityForumProvider>
+        <RootLayoutNav />
       </AuthProvider>
     </QueryClientProvider>
   );

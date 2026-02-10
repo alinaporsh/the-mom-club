@@ -1,5 +1,6 @@
 export const TAG_FILTERS = [
   "All",
+  "General",
   "Newborn",
   "Sleep",
   "Feeding",
@@ -8,6 +9,25 @@ export const TAG_FILTERS = [
 ] as const;
 
 export type ForumTagFilter = (typeof TAG_FILTERS)[number];
+
+/** Tags available when creating a post (excludes "All") */
+export const POST_TAGS = [
+  "General",
+  "Newborn",
+  "Sleep",
+  "Feeding",
+  "Postpartum",
+  "Mental Health",
+] as const;
+
+export type PostTag = (typeof POST_TAGS)[number];
+
+/** Get tag for display: prefer stored tag, else infer from content */
+export function getPostTag(post: { tag?: string | null; title?: string; body?: string }): string {
+  if (post.tag && post.tag.trim()) return post.tag.trim();
+  const inferred = inferTagsForPost(post.title ?? "", post.body ?? "")[0];
+  return inferred ?? "General";
+}
 
 export function inferTagsForPost(title: string, body: string): string[] {
   const text = `${title} ${body}`.toLowerCase();

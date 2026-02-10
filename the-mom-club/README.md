@@ -80,9 +80,11 @@ Unlike generic social networks or overwhelming parenting forums, The Mom Club of
 - **Admin**: Content moderation, event management, user management
 
 ### Community Forum
-- **Browse Posts**: View all community discussions
-- **Create Posts**: Share experiences, ask questions (free/member/admin only)
-- **Comment**: Reply to posts and engage in discussions (free/member/admin only)
+- **Browse Posts**: View all community discussions with pull-to-refresh
+- **Create Posts**: Share with tags (General, Newborn, Sleep, Feeding, Postpartum, Mental Health) and device image picker (free/member/admin only)
+- **Comment**: Add comments with optional images (1-level only; no threading) (free/member/admin only)
+- **Vote**: Upvote/downvote posts (mocked, local state)
+- **Filter**: Category-based filtering via modal drawer
 - **Moderation**: Admins can delete inappropriate content
 
 ### Events & Classes
@@ -218,6 +220,14 @@ Before running The Mom Club, ensure you have:
      - `supabase/migrations/008_fix_event_times.sql`
      - `supabase/migrations/009_add_event_prices_and_booking_policy.sql`
      - `supabase/migrations/010_add_email_exists_function.sql`
+     - `supabase/migrations/011_add_event_category_and_audience.sql`
+     - `supabase/migrations/012_add_event_category_and_audience.sql`
+     - `supabase/migrations/013_add_event_category_default.sql`
+     - `supabase/migrations/014_add_forum_images.sql`
+     - `supabase/migrations/015_drop_event_audience.sql`
+     - `supabase/migrations/016_add_event_audience_enum.sql`
+     - `supabase/migrations/017_forum_post_tags.sql`
+     - `supabase/migrations/018_forum_comment_images.sql`
 
 3. **Deploy Edge Functions** (optional, for enhanced features):
    ```bash
@@ -612,7 +622,7 @@ This project was developed with a combination of AI assistance and manual engine
 Due to the 2-day timeline, the following were explicitly out of scope:
 - **Payments**: Real Stripe integration (only UI mockup included)
 - **Advanced UI**: Loading skeletons, animations, accessibility enhancements
-- **Forum Enhancements**: Likes, nested comments, search, filtering
+- **Forum Enhancements**: Likes, search, filtering (flat comments only; no nesting)
 - **Profile Fields**: Full profile customization (height, weight, interests)
 - **Notifications**: Push notifications for new posts or event reminders
 - **Real-time**: Live updates using Supabase Realtime subscriptions
@@ -655,7 +665,7 @@ Given **one additional week** of development time, here are the features we woul
 - Notification preferences in profile settings
 - Event reminders (1 day before, 1 hour before)
 - New post alerts for followed topics
-- Comment reply notifications
+- New comment on your post notifications
 
 **5. TestFlight & Production (Day 7)**
 - Configure EAS Build for iOS and Android

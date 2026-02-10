@@ -75,23 +75,33 @@ These improvements should be tackled first as they provide the highest impact fo
 
 **Goal**: Make the community forum more engaging and feature-rich.
 
-**Implementation:**
-- Enhance comment input on post detail screen (MVP has a basic composer; add richer UI, better keyboard handling, and attachments)
+**✅ IMPLEMENTED Features:**
+- ✅ Post categories/tags for organization (General, Newborn, Sleep, Feeding, Postpartum, Mental Health)
+- ✅ Filter posts by category via event-style modal drawer
+- ✅ Image attachments for posts (device gallery picker with expo-image-picker)
+- ✅ Image attachments for comments (one image per comment)
+- ✅ Upvote/downvote UI on posts (mocked, local state, inline footer layout)
+- ✅ Pull-to-refresh on forum feed
+- ✅ Haptic feedback on interactions (votes, taps, filter selection)
+- ✅ Skeleton loading states (4 placeholder cards)
+- ✅ Full-width image previews (160px in list, 240px in detail)
+
+**🔜 IMMEDIATE PRIORITIES (+1 Week):**
+- **Supabase Storage Integration**: Persist images using Supabase Storage with proper RLS policies (instead of mocked local URIs)
+- **Persistent Voting**: Persist vote integrity using `post_votes` table (one vote per user, toggle behavior)
+- **Comment Count & Sorting**: Add comment count on feed cards and basic sorting (New/Top) once engagement data is available
+
+**🔜 FUTURE Features:**
+- Enhance comment input with richer UI and better keyboard handling
 - Like/reaction system for posts and comments
   - Database: Add `post_likes` and `comment_likes` tables
   - UI: Heart icon with count, animate on tap
-- Nested comment threads (replies to specific comments)
-  - Update `forum_comments` schema with `parent_comment_id`
-- Post categories/tags for organization
-  - Examples: "Pregnancy", "Postpartum", "Sleep", "Feeding"
-  - Filter posts by category
 - Search functionality:
   - Full-text search using PostgreSQL `tsvector`
   - Search posts by title, body, author name
 - Rich text editor for posts:
   - Bold, italic, lists, links
   - @mention system to tag other users
-  - Image embeds (URLs for MVP+1)
 - Sorting options (newest, most liked, most commented)
 - "Save post" feature for bookmarking
 
@@ -117,19 +127,7 @@ CREATE TABLE comment_likes (
   UNIQUE(comment_id, user_id)
 );
 
--- Add nested comments support
-ALTER TABLE forum_comments 
-ADD COLUMN parent_comment_id UUID REFERENCES forum_comments(id);
-
--- Add categories
-CREATE TABLE post_categories (
-  id UUID PRIMARY KEY,
-  name TEXT NOT NULL,
-  color TEXT
-);
-
-ALTER TABLE forum_posts
-ADD COLUMN category_id UUID REFERENCES post_categories(id);
+-- Flat forum model: no parent_comment_id, no nested threads
 ```
 
 ---

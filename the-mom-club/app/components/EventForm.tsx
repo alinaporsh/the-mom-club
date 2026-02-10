@@ -13,6 +13,10 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
+import { Image } from "expo-image";
+import * as ImagePicker from "expo-image-picker";
+import { supabase } from "../../lib/supabase";
+import { colors } from "../theme";
 
 type EventFormData = {
   title: string;
@@ -77,6 +81,11 @@ export default function EventForm({
     attendance_mode: "",
   });
   const [loading, setLoading] = useState(false);
+  const [selectedImage, setSelectedImage] = useState<{
+    uri: string;
+    fileName: string;
+    mimeType: string;
+  } | null>(null);
 
   // Initialize form when modal opens or initialData changes
   useEffect(() => {
@@ -125,6 +134,47 @@ export default function EventForm({
     }
   }, [visible, initialData, isEditing]);
 
+  const handlePickImage = async () => {
+    try {
+      if (Platform.OS !== "web") {
+        const { status } =
+          await ImagePicker.requestMediaLibraryPermissionsAsync();
+        if (status !== "granted") {
+          Alert.alert(
+            "Permission required",
+            "We need access to your photos so you can upload an event image."
+          );
+          return;
+        }
+      }
+
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        quality: 0.8,
+        allowsEditing: true,
+        aspect: [4, 3],
+      });
+
+      if (result.canceled || !result.assets?.length) {
+        return;
+      }
+
+      const asset = result.assets[0];
+
+      setSelectedImage({
+        uri: asset.uri,
+        fileName: asset.fileName ?? `event-${Date.now()}.jpg`,
+        mimeType: asset.mimeType ?? "image/jpeg",
+      });
+    } catch (error) {
+      console.warn("Image picker error", error);
+      Alert.alert(
+        "Image error",
+        "We couldn't open your photo library. Please try again."
+      );
+    }
+  };
+
   const handleSubmit = async () => {
     // Validation
     if (!formData.title.trim()) {
@@ -157,6 +207,84 @@ export default function EventForm({
 
     setLoading(true);
     try {
+      // If an image was picked, upload it to Supabase storage and use its public URL.
+      // Assumes an `event-images` bucket exists with public read access.
+      let finalImageUrl: string | null =
+        formData.image_url.trim() || null;
+
+      if (selectedImage) {
+        try {
+          const fileExt =
+            selectedImage.fileName.split(".").pop() || "jpg";
+          const fileName = `${Date.now()}-${Math.random()
+            .toString(36)
+            .slice(2)}.${fileExt}`;
+          const filePath = `events/${fileName}`;
+
+          const response = await fetch(selectedImage.uri);
+          const blob = await response.blob();
+
+          const { data: uploadData, error: uploadError } =
+            await supabase.storage
+              .from("event-images")
+              .upload(filePath, blob, {
+                contentType: selectedImage.mimeType,
+                upsert: true,
+              });
+
+          if (uploadError || !uploadData) {
+            console.error("Image upload error", uploadError);
+            throw uploadError;
+          }
+
+          const { data: publicUrlData } = supabase.storage
+            .from("event-images")
+            .getPublicUrl(uploadData.path);
+
+          finalImageUrl = publicUrlData.publicUrl ?? null;
+        } catch (uploadErr: any) {
+          console.error("Image upload failed", uploadErr);
+          
+          // Check if it's a bucket error (bucket doesn't exist)
+          const isBucketError = 
+            uploadErr?.message?.includes("Bucket not found") ||
+            uploadErr?.message?.includes("bucket") ||
+            uploadErr?.statusCode === 404 ||
+            uploadErr?.error === "Bucket not found";
+          
+          if (isBucketError) {
+            // Show helpful message but allow continuing without image
+            Alert.alert(
+              "Storage bucket not configured",
+              "The image storage bucket hasn't been set up yet. The event will be saved without an image. To enable image uploads, create a public 'event-images' bucket in Supabase Storage.",
+              [
+                {
+                  text: "Continue without image",
+                  style: "default",
+                },
+              ]
+            );
+            // Continue without image - finalImageUrl stays as formData.image_url or null
+            finalImageUrl = formData.image_url.trim() || null;
+          } else {
+            // For other errors, warn but allow continuing
+            Alert.alert(
+              "Image upload failed",
+              uploadErr?.message ??
+                "We couldn't upload the event image. The event will be saved without an image.",
+              [
+                {
+                  text: "Continue without image",
+                  style: "default",
+                },
+              ]
+            );
+            // Continue without image
+            finalImageUrl = formData.image_url.trim() || null;
+          }
+        }
+      }
+
       await onSubmit({
         title: formData.title.trim(),
         description: formData.description.trim() || null,
@@ -164,7 +292,7 @@ export default function EventForm({
         ends_at: endsAtISO,
         instructor: formData.instructor.trim() || null,
         location: formData.location.trim() || null,
-        image_url: formData.image_url.trim() || null,
+        image_url: finalImageUrl,
         price_qar: priceQar,
         category: formData.category.trim() || null,
         audience: formData.audience || null,
@@ -335,16 +463,48 @@ export default function EventForm({
             </Pressable>
           </View>
 
-          <Text style={styles.label}>Image URL</Text>
-          <TextInput
-            style={styles.input}
-            placeholder="Image URL (optional)"
-            placeholderTextColor="#B8A99A"
-            value={formData.image_url}
-            onChangeText={(text) => setFormData({ ...formData, image_url: text })}
-            editable={!loading}
-            autoCapitalize="none"
-          />
+          <Text style={styles.label}>Image</Text>
+          <View style={styles.imageUploadContainer}>
+            {selectedImage || formData.image_url ? (
+              <Image
+                source={{
+                  uri: selectedImage?.uri ?? formData.image_url,
+                }}
+                style={styles.imagePreview}
+                contentFit="cover"
+                transition={200}
+              />
+            ) : (
+              <View style={styles.imagePlaceholder}>
+                <Ionicons
+                  name="image-outline"
+                  size={32}
+                  color="#B8A99A"
+                />
+                <Text style={styles.imagePlaceholderText}>
+                  No image selected
+                </Text>
+              </View>
+            )}
+            <Pressable
+              style={({ pressed }) => [
+                styles.imageButton,
+                pressed && styles.imageButtonPressed,
+              ]}
+              onPress={handlePickImage}
+              disabled={loading}
+            >
+              <Text style={styles.imageButtonText}>
+                {selectedImage || formData.image_url
+                  ? "Change image"
+                  : "Upload image"}
+              </Text>
+            </Pressable>
+          </View>
+          <Text style={styles.hint}>
+            Optional. Images are stored securely and shown on the event
+            card.
+          </Text>
 
           <Text style={styles.label}>Activity type</Text>
           <TextInput
@@ -479,7 +639,7 @@ export default function EventForm({
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#fff7f2",
+    backgroundColor: colors.background,
   },
   header: {
     flexDirection: "row",
@@ -571,25 +731,25 @@ const styles = StyleSheet.create({
     padding: 20,
     borderTopWidth: 1,
     borderTopColor: "#E8E0D5",
-    backgroundColor: "#fff7f2",
+    backgroundColor: colors.background,
   },
   cancelButton: {
     flex: 1,
-    backgroundColor: "transparent",
+    backgroundColor: "#FFF",
     borderRadius: 10,
     paddingVertical: 14,
     alignItems: "center",
     borderWidth: 1.5,
-    borderColor: "#A8C6B6",
+    borderColor: colors.accentWarm,
   },
   cancelButtonText: {
     fontSize: 16,
     fontWeight: "600",
-    color: "#8B7355",
+    color: colors.accentWarm,
   },
   submitButton: {
     flex: 1,
-    backgroundColor: "#A8C6B6",
+    backgroundColor: colors.primary,
     borderRadius: 10,
     paddingVertical: 14,
     alignItems: "center",
@@ -601,5 +761,44 @@ const styles = StyleSheet.create({
   },
   buttonPressed: {
     opacity: 0.85,
+  },
+  imageUploadContainer: {
+    marginTop: 4,
+    backgroundColor: "#FFF",
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: "#E8E0D5",
+    overflow: "hidden",
+  },
+  imagePreview: {
+    width: "100%",
+    height: 160,
+    backgroundColor: "#E8E0D5",
+  },
+  imagePlaceholder: {
+    width: "100%",
+    height: 160,
+    backgroundColor: "#F5F0EB",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  imagePlaceholderText: {
+    marginTop: 8,
+    fontSize: 13,
+    color: "#B8A99A",
+  },
+  imageButton: {
+    paddingVertical: 10,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: colors.primary,
+  },
+  imageButtonPressed: {
+    opacity: 0.9,
+  },
+  imageButtonText: {
+    fontSize: 15,
+    fontWeight: "600",
+    color: "#FFF",
   },
 });
