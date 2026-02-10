@@ -2,6 +2,7 @@ import React, { useEffect } from "react";
 import { View, StyleSheet, ActivityIndicator } from "react-native";
 import { useRouter } from "expo-router";
 import { useAuth } from "../contexts/AuthContext";
+import { colors } from "./theme";
 
 /**
  * Root index screen - handles auth-based routing only.
@@ -60,7 +61,7 @@ export default function IndexScreen() {
 
   return (
     <View style={styles.container}>
-      <ActivityIndicator size="large" color="#A8C6B6" />
+      <ActivityIndicator size="large" color={colors.primary} />
     </View>
   );
 }
@@ -70,6 +71,6 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
-    backgroundColor: "#fff7f2",
+    backgroundColor: colors.background,
   },
 });

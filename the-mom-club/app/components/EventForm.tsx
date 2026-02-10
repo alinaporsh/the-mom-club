@@ -23,12 +23,22 @@ type EventFormData = {
   location: string;
   image_url: string;
   price_qar: string; // String for input, will be converted to number
+  category: string;
+  audience: "" | "pregnant" | "new_mom" | "planning";
+  attendance_mode: "" | "online" | "in_person";
 };
 
 type EventFormProps = {
   visible: boolean;
   onClose: () => void;
-  onSubmit: (data: Omit<EventFormData, "price_qar"> & { price_qar: number | null }) => Promise<void>;
+  onSubmit: (
+    data: Omit<EventFormData, "price_qar"> & {
+      price_qar: number | null;
+      category: string | null;
+      audience: "pregnant" | "new_mom" | "planning" | null;
+      attendance_mode: "online" | "in_person" | null;
+    }
+  ) => Promise<void>;
   initialData?: {
     id: string;
     title: string;
@@ -39,6 +49,9 @@ type EventFormProps = {
     location: string | null;
     image_url: string | null;
     price_qar: number | null;
+    category: string | null;
+    audience: "pregnant" | "new_mom" | "planning" | null;
+    attendance_mode: "online" | "in_person" | null;
   };
   isEditing?: boolean;
 };
@@ -59,6 +72,9 @@ export default function EventForm({
     location: "",
     image_url: "",
     price_qar: "",
+    category: "",
+    audience: "",
+    attendance_mode: "",
   });
   const [loading, setLoading] = useState(false);
 
@@ -86,6 +102,9 @@ export default function EventForm({
           location: initialData.location || "",
           image_url: initialData.image_url || "",
           price_qar: initialData.price_qar !== null ? String(initialData.price_qar) : "",
+          category: initialData.category || "",
+          audience: initialData.audience ?? "",
+          attendance_mode: initialData.attendance_mode ?? "",
         });
       } else {
         // Reset form for new event
@@ -98,6 +117,9 @@ export default function EventForm({
           location: "",
           image_url: "",
           price_qar: "",
+          category: "",
+          audience: "",
+          attendance_mode: "",
         });
       }
     }
@@ -144,6 +166,9 @@ export default function EventForm({
         location: formData.location.trim() || null,
         image_url: formData.image_url.trim() || null,
         price_qar: priceQar,
+        category: formData.category.trim() || null,
+        audience: formData.audience || null,
+        attendance_mode: formData.attendance_mode || null,
       });
       onClose();
     } catch (error: any) {
@@ -239,6 +264,77 @@ export default function EventForm({
             editable={!loading}
           />
 
+          <Text style={styles.label}>How is this hosted?</Text>
+          <View style={styles.audienceRow}>
+            <Pressable
+              style={[
+                styles.audiencePill,
+                formData.attendance_mode === "" && styles.audiencePillActive,
+              ]}
+              onPress={() =>
+                setFormData({
+                  ...formData,
+                  attendance_mode: "",
+                })
+              }
+              disabled={loading}
+            >
+              <Text
+                style={[
+                  styles.audiencePillText,
+                  formData.attendance_mode === "" && styles.audiencePillTextActive,
+                ]}
+              >
+                Not set
+              </Text>
+            </Pressable>
+            <Pressable
+              style={[
+                styles.audiencePill,
+                formData.attendance_mode === "online" && styles.audiencePillActive,
+              ]}
+              onPress={() =>
+                setFormData({
+                  ...formData,
+                  attendance_mode: "online",
+                  location: formData.location || "Online",
+                })
+              }
+              disabled={loading}
+            >
+              <Text
+                style={[
+                  styles.audiencePillText,
+                  formData.attendance_mode === "online" && styles.audiencePillTextActive,
+                ]}
+              >
+                Online
+              </Text>
+            </Pressable>
+            <Pressable
+              style={[
+                styles.audiencePill,
+                formData.attendance_mode === "in_person" && styles.audiencePillActive,
+              ]}
+              onPress={() =>
+                setFormData({
+                  ...formData,
+                  attendance_mode: "in_person",
+                })
+              }
+              disabled={loading}
+            >
+              <Text
+                style={[
+                  styles.audiencePillText,
+                  formData.attendance_mode === "in_person" && styles.audiencePillTextActive,
+                ]}
+              >
+                In person
+              </Text>
+            </Pressable>
+          </View>
+
           <Text style={styles.label}>Image URL</Text>
           <TextInput
             style={styles.input}
@@ -249,6 +345,88 @@ export default function EventForm({
             editable={!loading}
             autoCapitalize="none"
           />
+
+          <Text style={styles.label}>Activity type</Text>
+          <TextInput
+            style={styles.input}
+            placeholder="e.g. Fitness, Nutrition, Support Circle"
+            placeholderTextColor="#B8A99A"
+            value={formData.category}
+            onChangeText={(text) => setFormData({ ...formData, category: text })}
+            editable={!loading}
+          />
+
+          <Text style={styles.label}>Who is this for?</Text>
+          <View style={styles.audienceRow}>
+            <Pressable
+              style={[
+                styles.audiencePill,
+                formData.audience === "" && styles.audiencePillActive,
+              ]}
+              onPress={() => setFormData({ ...formData, audience: "" })}
+              disabled={loading}
+            >
+              <Text
+                style={[
+                  styles.audiencePillText,
+                  formData.audience === "" && styles.audiencePillTextActive,
+                ]}
+              >
+                All
+              </Text>
+            </Pressable>
+            <Pressable
+              style={[
+                styles.audiencePill,
+                formData.audience === "pregnant" && styles.audiencePillActive,
+              ]}
+              onPress={() => setFormData({ ...formData, audience: "pregnant" })}
+              disabled={loading}
+            >
+              <Text
+                style={[
+                  styles.audiencePillText,
+                  formData.audience === "pregnant" && styles.audiencePillTextActive,
+                ]}
+              >
+                Pregnant
+              </Text>
+            </Pressable>
+            <Pressable
+              style={[
+                styles.audiencePill,
+                formData.audience === "new_mom" && styles.audiencePillActive,
+              ]}
+              onPress={() => setFormData({ ...formData, audience: "new_mom" })}
+              disabled={loading}
+            >
+              <Text
+                style={[
+                  styles.audiencePillText,
+                  formData.audience === "new_mom" && styles.audiencePillTextActive,
+                ]}
+              >
+                New Mom
+              </Text>
+            </Pressable>
+            <Pressable
+              style={[
+                styles.audiencePill,
+                formData.audience === "planning" && styles.audiencePillActive,
+              ]}
+              onPress={() => setFormData({ ...formData, audience: "planning" })}
+              disabled={loading}
+            >
+              <Text
+                style={[
+                  styles.audiencePillText,
+                  formData.audience === "planning" && styles.audiencePillTextActive,
+                ]}
+              >
+                Planning
+              </Text>
+            </Pressable>
+          </View>
 
           <Text style={styles.label}>Price (QAR)</Text>
           <TextInput
@@ -359,6 +537,33 @@ const styles = StyleSheet.create({
     color: "#B8A99A",
     marginTop: 4,
     marginBottom: 8,
+  },
+  audienceRow: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 8,
+    marginTop: 4,
+    marginBottom: 4,
+  },
+  audiencePill: {
+    paddingVertical: 8,
+    paddingHorizontal: 14,
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: "#A8C6B6",
+    backgroundColor: "#FFF",
+  },
+  audiencePillActive: {
+    backgroundColor: "#A8C6B6",
+    borderColor: "#A8C6B6",
+  },
+  audiencePillText: {
+    fontSize: 14,
+    color: "#8B7355",
+    fontWeight: "500",
+  },
+  audiencePillTextActive: {
+    color: "#FFF",
   },
   footer: {
     flexDirection: "row",

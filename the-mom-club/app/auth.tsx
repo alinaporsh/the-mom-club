@@ -15,6 +15,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { supabase } from "../lib/supabase";
 import { useAuth } from "../contexts/AuthContext";
 import { Logo } from "../components/Logo";
+import { colors } from "./theme";
 
 const isSupabaseConfigured =
   !!process.env.EXPO_PUBLIC_SUPABASE_URL &&
@@ -316,7 +317,7 @@ export default function AuthScreen() {
             <Pressable
               style={({ pressed }) => [
                 styles.primaryButton,
-                (pressed || loading === "signup") && styles.buttonPressed,
+                (pressed || loading === "signup") && styles.primaryButtonPressed,
               ]}
               onPress={() => handleSendCode(true)}
               disabled={!!loading}
@@ -330,7 +331,7 @@ export default function AuthScreen() {
             <Pressable
               style={({ pressed }) => [
                 styles.secondaryButton,
-                (pressed || loading === "signin") && styles.buttonPressed,
+                (pressed || loading === "signin") && styles.secondaryButtonPressed,
               ]}
               onPress={() => handleSendCode(false)}
               disabled={!!loading}
@@ -390,7 +391,7 @@ export default function AuthScreen() {
           <Pressable
             style={({ pressed }) => [
               styles.primaryButton,
-              (pressed || loading === "verify") && styles.buttonPressed,
+              (pressed || loading === "verify") && styles.primaryButtonPressed,
             ]}
             onPress={handleVerifyCode}
             disabled={!!loading}
@@ -421,20 +422,20 @@ export default function AuthScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#fff7f2" },
+  container: { flex: 1, backgroundColor: colors.background },
   keyboardView: { flex: 1, justifyContent: "center" },
   content: { paddingHorizontal: 28, paddingVertical: 24 },
   header: { marginBottom: 32, alignItems: "center" },
   logo: { marginBottom: 16 },
-  title: { fontSize: 22, fontWeight: "600", color: "#5C4A4A", marginBottom: 8 },
-  subtitle: { fontSize: 16, color: "#8B7355", textAlign: "center", lineHeight: 24 },
+  title: { fontSize: 22, fontWeight: "600", color: colors.textPrimary, marginBottom: 8 },
+  subtitle: { fontSize: 16, color: colors.textSecondary, textAlign: "center", lineHeight: 24 },
   input: {
     backgroundColor: "#FFF",
     borderRadius: 30,
     paddingVertical: 16,
     paddingHorizontal: 18,
     fontSize: 16,
-    color: "#5C4A4A",
+    color: colors.textPrimary,
     marginBottom: 16,
     borderWidth: 1,
     borderColor: "#E8E0D5",
@@ -445,32 +446,55 @@ const styles = StyleSheet.create({
     fontWeight: "600",
   },
   primaryButton: {
-    backgroundColor: "#A8C6B6",
+    // Primary blue‑teal tone shared across the app
+    backgroundColor: colors.primary,
     borderRadius: 30,
     paddingVertical: 16,
     alignItems: "center",
     marginBottom: 12,
+    shadowColor: colors.primarySoft,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.25,
+    shadowRadius: 6,
+    elevation: 3,
   },
   secondaryButton: {
-    backgroundColor: "transparent",
+    backgroundColor: "#FFF",
     borderRadius: 30,
     paddingVertical: 16,
     alignItems: "center",
     borderWidth: 1.5,
-    borderColor: "#A8C6B6",
+    // Warm outline like the mockup "Sign In" button
+    borderColor: colors.accentWarm,
     marginBottom: 28,
   },
-  buttonPressed: { opacity: 0.85 },
+  primaryButtonPressed: {
+    transform: [{ scale: 0.97 }],
+    // Slightly deeper blue‑teal on press for contrast
+    backgroundColor: colors.primaryPressed,
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 4,
+  },
+  secondaryButtonPressed: {
+    opacity: 0.7,
+  },
   primaryButtonText: { fontSize: 17, fontWeight: "600", color: "#FFF" },
-  secondaryButtonText: { fontSize: 17, fontWeight: "600", color: "#8B7355" },
+  secondaryButtonText: { fontSize: 17, fontWeight: "600", color: colors.accentWarm },
   divider: { flexDirection: "row", alignItems: "center", marginBottom: 20 },
   dividerLine: { flex: 1, height: 1, backgroundColor: "#E0D8CC" },
   dividerText: { marginHorizontal: 14, fontSize: 14, color: "#B8A99A" },
-  textButton: { fontSize: 16, color: "#8B7355", textAlign: "center", textDecorationLine: "underline" },
+  textButton: {
+    fontSize: 16,
+    color: colors.textSecondary,
+    textAlign: "center",
+    textDecorationLine: "underline",
+  },
   textButtonPressed: { opacity: 0.7 },
   resendRow: { flexDirection: "row", justifyContent: "center", marginTop: 8, marginBottom: 24 },
-  resendText: { fontSize: 14, color: "#8B7355" },
-  resendLink: { fontSize: 14, color: "#A8C6B6", fontWeight: "600" },
+  resendText: { fontSize: 14, color: colors.textSecondary },
+  resendLink: { fontSize: 14, color: colors.primary, fontWeight: "600" },
   backButton: { alignItems: "center", paddingVertical: 12 },
-  backButtonText: { fontSize: 15, color: "#8B7355" },
+  backButtonText: { fontSize: 15, color: colors.textSecondary },
 });

@@ -16,6 +16,8 @@ import { useRouter } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useQueryClient } from "@tanstack/react-query";
 import { Ionicons } from "@expo/vector-icons";
+import * as Haptics from "expo-haptics";
+import { colors } from "../theme";
 import { useAuth } from "../../contexts/AuthContext";
 import { supabase } from "../../lib/supabase";
 import PaymentModal from "../components/PaymentModal";
@@ -210,7 +212,10 @@ export default function ProfileScreen() {
         {showUpgradeButton && (
           <Pressable
             style={({ pressed }) => [styles.upgradeButton, pressed && styles.buttonPressed]}
-            onPress={openPaymentModal}
+            onPress={() => {
+              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
+              openPaymentModal();
+            }}
           >
             <Text style={styles.buttonText}>Upgrade to member — 80 QAR</Text>
           </Pressable>
@@ -219,14 +224,20 @@ export default function ProfileScreen() {
           <>
             <Pressable
               style={({ pressed }) => [styles.editButton, pressed && styles.buttonPressed]}
-              onPress={openEditModal}
+              onPress={() => {
+                Haptics.selectionAsync().catch(() => {});
+                openEditModal();
+              }}
             >
               <Ionicons name="create-outline" size={18} color="#8B7355" style={{ marginRight: 8 }} />
               <Text style={styles.editButtonText}>Edit Profile</Text>
             </Pressable>
             <Pressable
               style={({ pressed }) => [styles.signOutButton, pressed && styles.buttonPressed]}
-              onPress={handleSignOut}
+              onPress={() => {
+                Haptics.selectionAsync().catch(() => {});
+                handleSignOut();
+              }}
             >
               <Text style={styles.signOutButtonText}>Sign out</Text>
             </Pressable>
@@ -235,7 +246,10 @@ export default function ProfileScreen() {
         {isGuest && (
           <Pressable
             style={({ pressed }) => [styles.button, pressed && styles.buttonPressed]}
-            onPress={() => router.replace("/auth")}
+            onPress={() => {
+              Haptics.selectionAsync().catch(() => {});
+              router.replace("/auth");
+            }}
           >
             <Text style={styles.buttonText}>Sign in</Text>
           </Pressable>
@@ -273,7 +287,7 @@ export default function ProfileScreen() {
               {/* Header */}
               <View style={styles.modalHeader}>
                 <Pressable onPress={closeEditModal} disabled={saving}>
-                  <Ionicons name="close" size={28} color="#5C4A4A" />
+                  <Ionicons name="close" size={28} color={colors.textPrimary} />
                 </Pressable>
                 <Text style={styles.modalTitle}>Edit Profile</Text>
                 <View style={{ width: 28 }} />
@@ -374,9 +388,9 @@ export default function ProfileScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#fff7f2" },
+  container: { flex: 1, backgroundColor: colors.background },
   header: { padding: 24, paddingBottom: 10 },
-  headerTitle: { fontSize: 28, fontWeight: "600", color: "#5C4A4A" },
+  headerTitle: { fontSize: 28, fontWeight: "600", color: colors.textPrimary },
   content: { padding: 24 },
   card: {
     backgroundColor: "#FFF",
@@ -393,7 +407,7 @@ const styles = StyleSheet.create({
   divider: { height: 1, backgroundColor: "#F0EAE0", marginVertical: 12 },
   label: { fontSize: 14, color: "#B8A99A", marginBottom: 6 },
   roleContainer: { flexDirection: "row", alignItems: "center", gap: 10 },
-  value: { fontSize: 18, color: "#5C4A4A", fontWeight: "500" },
+  value: { fontSize: 18, color: colors.textPrimary, fontWeight: "500" },
   adminBadge: {
     flexDirection: "row",
     alignItems: "center",
@@ -404,10 +418,10 @@ const styles = StyleSheet.create({
     borderRadius: 12,
   },
   adminBadgeText: { fontSize: 12, fontWeight: "600", color: "#FFF" },
-  upgrade: { fontSize: 14, color: "#8B7355", marginTop: 6, fontStyle: "italic" },
+  upgrade: { fontSize: 14, color: colors.textSecondary, marginTop: 6, fontStyle: "italic" },
   
   upgradeButton: {
-    backgroundColor: "#A8C6B6",
+    backgroundColor: colors.primary,
     borderRadius: 30,
     paddingVertical: 16,
     alignItems: "center",
@@ -419,7 +433,7 @@ const styles = StyleSheet.create({
     elevation: 3,
   },
   button: {
-    backgroundColor: "#A8C6B6",
+    backgroundColor: colors.primary,
     borderRadius: 30,
     paddingVertical: 16,
     alignItems: "center",
@@ -432,24 +446,24 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     borderWidth: 1,
-    borderColor: "#E8E0D5",
+    borderColor: colors.borderSubtle,
     marginBottom: 12,
   },
-  editButtonText: { fontSize: 16, fontWeight: "600", color: "#8B7355" },
+  editButtonText: { fontSize: 16, fontWeight: "600", color: colors.textSecondary },
   signOutButton: {
     backgroundColor: "#FFF",
     borderRadius: 30,
     paddingVertical: 16,
     alignItems: "center",
     borderWidth: 1,
-    borderColor: "#E8E0D5",
+    borderColor: colors.borderSubtle,
   },
   buttonPressed: { opacity: 0.85 },
   buttonText: { fontSize: 16, fontWeight: "600", color: "#FFF" },
-  signOutButtonText: { fontSize: 16, fontWeight: "600", color: "#8B7355" },
+  signOutButtonText: { fontSize: 16, fontWeight: "600", color: colors.textSecondary },
 
   // Modal styles
-  modalContainer: { flex: 1, backgroundColor: "#fff7f2" },
+  modalContainer: { flex: 1, backgroundColor: colors.background },
   modalKeyboard: { flex: 1 },
   modalScroll: { padding: 24, paddingBottom: 40 },
   modalHeader: {
@@ -458,20 +472,26 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     marginBottom: 24,
   },
-  modalTitle: { fontSize: 18, fontWeight: "600", color: "#5C4A4A" },
+  modalTitle: { fontSize: 18, fontWeight: "600", color: colors.textPrimary },
   planCard: {
     backgroundColor: "#FFF",
     borderRadius: 20,
     padding: 24,
     marginBottom: 24,
     borderWidth: 1,
-    borderColor: "#E8E0D5",
+    borderColor: colors.borderSubtle,
   },
-  planName: { fontSize: 18, fontWeight: "600", color: "#5C4A4A" },
-  planPrice: { fontSize: 28, fontWeight: "700", color: "#8B7355", marginTop: 4 },
-  planDesc: { fontSize: 14, color: "#8B7355", marginTop: 8, lineHeight: 20 },
+  planName: { fontSize: 18, fontWeight: "600", color: colors.textPrimary },
+  planPrice: { fontSize: 28, fontWeight: "700", color: colors.textSecondary, marginTop: 4 },
+  planDesc: { fontSize: 14, color: colors.textSecondary, marginTop: 8, lineHeight: 20 },
   formSection: { marginBottom: 16 },
-  formLabel: { fontSize: 14, color: "#5C4A4A", marginBottom: 8, fontWeight: "500", marginLeft: 4 },
+  formLabel: {
+    fontSize: 14,
+    color: colors.textPrimary,
+    marginBottom: 8,
+    fontWeight: "500",
+    marginLeft: 4,
+  },
   formRow: { flexDirection: "row" },
   input: {
     backgroundColor: "#FFF",
@@ -479,7 +499,7 @@ const styles = StyleSheet.create({
     paddingVertical: 14,
     paddingHorizontal: 20,
     fontSize: 16,
-    color: "#5C4A4A",
+    color: colors.textPrimary,
     borderWidth: 1,
     borderColor: "#E8E0D5",
   },
@@ -489,7 +509,7 @@ const styles = StyleSheet.create({
     backgroundColor: "#FFF",
     borderRadius: 30,
     borderWidth: 1,
-    borderColor: "#E8E0D5",
+    borderColor: colors.borderSubtle,
     paddingHorizontal: 16,
   },
   inputIcon: { marginRight: 8 },
@@ -497,11 +517,11 @@ const styles = StyleSheet.create({
     flex: 1,
     paddingVertical: 14,
     fontSize: 16,
-    color: "#5C4A4A",
+    color: colors.textPrimary,
   },
   payButton: {
     marginTop: 24,
-    backgroundColor: "#A8C6B6",
+    backgroundColor: colors.primary,
     borderRadius: 30,
     paddingVertical: 16,
     alignItems: "center",

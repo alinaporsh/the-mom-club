@@ -6,6 +6,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 import { useAuth } from "../../contexts/AuthContext";
 import { Logo } from "../../components/Logo";
+import { colors } from "../theme";
 
 type CardData = {
   id: string;
@@ -147,13 +148,13 @@ export default function HomeScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#fff7f2" },
+  container: { flex: 1, backgroundColor: colors.background },
   scroll: { paddingTop: 8, paddingHorizontal: 20, paddingBottom: 40 },
   header: { alignItems: "center", marginBottom: 20 },
   welcomeBackText: { 
     fontSize: 24, 
     fontWeight: "700", 
-    color: "#5C4A4A", 
+    color: colors.textPrimary, 
     marginBottom: 24,
     paddingHorizontal: 4,
   },
@@ -165,15 +166,27 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: "#F0E8DD",
   },
-  welcomeText: { fontSize: 22, fontWeight: "600", color: "#5C4A4A", marginBottom: 8 },
-  welcomeDescription: { fontSize: 14, color: "#8B7355", lineHeight: 20, marginBottom: 16 },
+  welcomeText: { fontSize: 22, fontWeight: "600", color: colors.textPrimary, marginBottom: 8 },
+  welcomeDescription: { fontSize: 14, color: colors.textSecondary, lineHeight: 20, marginBottom: 16 },
   memberButton: {
-    backgroundColor: "#A8C6B6",
+    backgroundColor: colors.primary,
     borderRadius: 30,
     paddingVertical: 14,
     alignItems: "center",
+    shadowColor: colors.primarySoft,
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.25,
+    shadowRadius: 5,
+    elevation: 3,
   },
-  memberButtonPressed: { opacity: 0.85 },
+  memberButtonPressed: {
+    transform: [{ scale: 0.97 }],
+    backgroundColor: colors.primaryPressed,
+    shadowOffset: { width: 0, height: 5 },
+    shadowOpacity: 0.3,
+    shadowRadius: 7,
+    elevation: 4,
+  },
   memberButtonText: { fontSize: 16, fontWeight: "600", color: "#FFF" },
   cardsContainer: { 
     gap: 16,

@@ -14,6 +14,7 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
+import { colors } from "../theme";
 
 type PaymentModalProps = {
   visible: boolean;
@@ -118,7 +119,7 @@ export default function PaymentModal({
             {/* Header */}
             <View style={styles.modalHeader}>
               <Pressable onPress={handleRequestClose} disabled={processing}>
-                <Ionicons name="close" size={28} color="#5C4A4A" />
+                <Ionicons name="close" size={28} color={colors.textPrimary} />
               </Pressable>
               <Text style={styles.modalTitle}>{title}</Text>
               <View style={{ width: 28 }} />
@@ -224,7 +225,7 @@ export default function PaymentModal({
 }
 
 const styles = StyleSheet.create({
-  modalContainer: { flex: 1, backgroundColor: "#fff7f2" },
+  modalContainer: { flex: 1, backgroundColor: colors.background },
   modalKeyboard: { flex: 1 },
   modalScroll: { padding: 24, paddingBottom: 40 },
   modalHeader: {
@@ -233,22 +234,22 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     marginBottom: 24,
   },
-  modalTitle: { fontSize: 18, fontWeight: "600", color: "#5C4A4A" },
+  modalTitle: { fontSize: 18, fontWeight: "600", color: colors.textPrimary },
   planCard: {
     backgroundColor: "#FFF",
     borderRadius: 20,
     padding: 24,
     marginBottom: 24,
     borderWidth: 1,
-    borderColor: "#E8E0D5",
+    borderColor: colors.borderSubtle,
   },
-  planName: { fontSize: 18, fontWeight: "600", color: "#5C4A4A" },
-  planPrice: { fontSize: 28, fontWeight: "700", color: "#8B7355", marginTop: 4 },
-  planDesc: { fontSize: 14, color: "#8B7355", marginTop: 8, lineHeight: 20 },
+  planName: { fontSize: 18, fontWeight: "600", color: colors.textPrimary },
+  planPrice: { fontSize: 28, fontWeight: "700", color: colors.textSecondary, marginTop: 4 },
+  planDesc: { fontSize: 14, color: colors.textSecondary, marginTop: 8, lineHeight: 20 },
   formSection: { marginBottom: 16 },
   formLabel: {
     fontSize: 14,
-    color: "#5C4A4A",
+    color: colors.textPrimary,
     marginBottom: 8,
     fontWeight: "500",
     marginLeft: 4,
@@ -260,7 +261,7 @@ const styles = StyleSheet.create({
     paddingVertical: 14,
     paddingHorizontal: 20,
     fontSize: 16,
-    color: "#5C4A4A",
+    color: colors.textPrimary,
     borderWidth: 1,
     borderColor: "#E8E0D5",
   },
@@ -270,7 +271,7 @@ const styles = StyleSheet.create({
     backgroundColor: "#FFF",
     borderRadius: 30,
     borderWidth: 1,
-    borderColor: "#E8E0D5",
+    borderColor: colors.borderSubtle,
     paddingHorizontal: 16,
   },
   inputIcon: { marginRight: 8 },
@@ -278,11 +279,11 @@ const styles = StyleSheet.create({
     flex: 1,
     paddingVertical: 14,
     fontSize: 16,
-    color: "#5C4A4A",
+    color: colors.textPrimary,
   },
   payButton: {
     marginTop: 24,
-    backgroundColor: "#A8C6B6",
+    backgroundColor: colors.primary,
     borderRadius: 30,
     paddingVertical: 16,
     alignItems: "center",

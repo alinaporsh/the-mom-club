@@ -6,18 +6,21 @@ import {
   Pressable,
   Alert,
   ActivityIndicator,
+  Animated,
 } from "react-native";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Ionicons } from "@expo/vector-icons";
 import { Image } from "expo-image";
+import * as Haptics from "expo-haptics";
 import { supabase } from "../../lib/supabase";
 import { useAuth, useIsAdmin } from "../../contexts/AuthContext";
 import { queryKeys } from "../../lib/queryClient";
 import PaymentModal from "../components/PaymentModal";
 import EventForm from "../components/EventForm";
+import { colors } from "../theme";
 
 type Event = {
   id: string;
@@ -29,6 +32,9 @@ type Event = {
   location: string | null;
   image_url: string | null;
   price_qar: number | null;
+  category: string | null;
+  audience: "pregnant" | "new_mom" | "planning" | null;
+  attendance_mode: "online" | "in_person" | null;
 };
 
 async function fetchEvent(id: string): Promise<Event | null> {
@@ -73,6 +79,8 @@ export default function EventDetailScreen() {
   const queryClient = useQueryClient();
   const [showClassPaymentModal, setShowClassPaymentModal] = useState(false);
   const [showEditForm, setShowEditForm] = useState(false);
+  const [fadeAnim] = useState(new Animated.Value(0));
+  const [translateY] = useState(new Animated.Value(12));
 
   const { data: event, isLoading } = useQuery({
     queryKey: queryKeys.event(eventId),
@@ -113,6 +121,21 @@ export default function EventDetailScreen() {
   const isMemberOrAdmin = role === "member" || role === "admin";
   const isFreeMember = role === "free";
 
+  useEffect(() => {
+    Animated.parallel([
+      Animated.timing(fadeAnim, {
+        toValue: 1,
+        duration: 220,
+        useNativeDriver: true,
+      }),
+      Animated.timing(translateY, {
+        toValue: 0,
+        duration: 220,
+        useNativeDriver: true,
+      }),
+    ]).start();
+  }, [fadeAnim, translateY]);
+
   async function handlePaidBookingForFreeMember() {
     if (!event) {
       throw new Error("Event details are not available.");
@@ -140,6 +163,8 @@ export default function EventDetailScreen() {
   }
 
   function handleBook() {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium).catch(() => {});
+
     if (!state.session?.user?.id || !eventId || state.isGuest) {
       Alert.alert("Sign in required", "You must be signed in to book.");
       return;
@@ -174,6 +199,9 @@ export default function EventDetailScreen() {
     location: string | null;
     image_url: string | null;
     price_qar: number | null;
+    category: string | null;
+    audience: "pregnant" | "new_mom" | "planning" | null;
+    attendance_mode: "online" | "in_person" | null;
   }) {
     const { error } = await supabase
       .from("events")
@@ -223,17 +251,46 @@ export default function EventDetailScreen() {
   if (!eventId || isLoading || !event) {
     return (
       <View style={styles.centered}>
-        <ActivityIndicator size="large" color="#8B7355" />
+        <ActivityIndicator size="large" color={colors.textSecondary} />
       </View>
     );
   }
 
   const isBooked = bookingStatus?.isBooked ?? false;
-  const canBook = (!state.isGuest && (isMemberOrAdmin || isFreeMember));
   const price =
     event && typeof event.price_qar === "number" && !Number.isNaN(event.price_qar)
       ? event.price_qar
       : null;
+  const priceLabel =
+    price !== null
+      ? isFreeMember
+        ? `Price: ${price} QAR per class`
+        : isMemberOrAdmin
+        ? "Included in your membership"
+        : `Price: ${price} QAR`
+      : null;
+  // Build tags to mirror the list cards, but show all instead of "+1".
+  const detailTags: string[] = [];
+  if (event.category && event.category.trim()) {
+    detailTags.push(event.category.trim());
+  }
+  if (event.audience) {
+    detailTags.push(
+      event.audience === "pregnant"
+        ? "Pregnant"
+        : event.audience === "new_mom"
+        ? "New Mom"
+        : "Planning"
+    );
+  }
+  const locLower = (event.location ?? "").toLowerCase();
+  const isOnline =
+    event.attendance_mode === "online" ||
+    (!event.attendance_mode &&
+      (locLower.includes("online") || locLower.includes("zoom") || locLower.includes("virtual")));
+  if (event.location || event.attendance_mode) {
+    detailTags.push(isOnline ? "Online" : "In person");
+  }
 
   return (
     <SafeAreaView style={styles.container} edges={["top", "bottom"]}>
@@ -242,7 +299,7 @@ export default function EventDetailScreen() {
           style={({ pressed }) => [styles.backButton, pressed && styles.backButtonPressed]}
           onPress={() => router.back()}
         >
-          <Ionicons name="arrow-back" size={24} color="#5C4A4A" />
+          <Ionicons name="arrow-back" size={24} color={colors.textPrimary} />
         </Pressable>
         {isAdmin && (
           <View style={styles.adminActions}>
@@ -250,7 +307,7 @@ export default function EventDetailScreen() {
               style={({ pressed }) => [styles.adminButton, pressed && styles.adminButtonPressed]}
               onPress={() => setShowEditForm(true)}
             >
-              <Ionicons name="create-outline" size={20} color="#5C4A4A" />
+              <Ionicons name="create-outline" size={20} color={colors.textPrimary} />
             </Pressable>
             <Pressable
               style={({ pressed }) => [styles.adminButton, styles.deleteButton, pressed && styles.adminButtonPressed]}
@@ -261,11 +318,15 @@ export default function EventDetailScreen() {
           </View>
         )}
       </View>
-      <ScrollView contentContainerStyle={styles.scroll}>
+      <Animated.ScrollView
+        contentContainerStyle={styles.scroll}
+        style={{ opacity: fadeAnim, transform: [{ translateY }] }}
+        showsVerticalScrollIndicator={false}
+      >
         {event.image_url && (
-          <Image 
-            source={{ uri: event.image_url }} 
-            style={styles.heroImage} 
+          <Image
+            source={{ uri: event.image_url }}
+            style={styles.heroImage}
             contentFit="cover"
             transition={300}
             cachePolicy="memory-disk"
@@ -290,6 +351,24 @@ export default function EventDetailScreen() {
         )}
 
         <Text style={styles.title}>{event.title}</Text>
+        {detailTags.length > 0 && (
+          <View style={styles.tagsRow}>
+            {detailTags.map((label, index) => (
+              <View
+                key={`${label}-${index}`}
+                style={index === 0 ? styles.tagPill : styles.audienceTagPill}
+              >
+                <Text
+                  style={index === 0 ? styles.tagPillText : styles.audienceTagPillText}
+                  numberOfLines={1}
+                  ellipsizeMode="tail"
+                >
+                  {label}
+                </Text>
+              </View>
+            ))}
+          </View>
+        )}
         <Text style={styles.meta}>
           {new Date(event.starts_at).toLocaleString([], {
             year: "numeric",
@@ -300,29 +379,58 @@ export default function EventDetailScreen() {
           })}
           {event.instructor ? ` · ${event.instructor}` : ""}
         </Text>
-        {event.location ? (
-          <Text style={styles.location}>{event.location}</Text>
-        ) : null}
-        {price !== null && (
-          <Text style={styles.price}>
-            {isFreeMember
-              ? `Price: ${price} QAR per class`
-              : isMemberOrAdmin
-              ? "Included in your membership"
-              : `Price: ${price} QAR`}
-          </Text>
+        {(event.location || priceLabel) && (
+          <View style={styles.infoRow}>
+            {event.location && (
+              <View style={styles.infoChip}>
+                <Ionicons
+                  name={
+                    event.attendance_mode === "online" ||
+                    (event.location ?? "").toLowerCase().includes("online")
+                      ? "wifi-outline"
+                      : "location-outline"
+                  }
+                  size={14}
+                  color={colors.textSecondary}
+                />
+                <Text
+                  style={styles.infoChipText}
+                  numberOfLines={1}
+                  ellipsizeMode="tail"
+                >
+                  {event.location}
+                </Text>
+              </View>
+            )}
+            {priceLabel && (
+              <View style={styles.infoChip}>
+                <Ionicons name="pricetag-outline" size={14} color={colors.textSecondary} />
+                <Text
+                  style={styles.infoChipText}
+                  numberOfLines={1}
+                  ellipsizeMode="tail"
+                >
+                  {priceLabel}
+                </Text>
+              </View>
+            )}
+          </View>
         )}
         {event.description ? (
           <Text style={styles.description}>{event.description}</Text>
         ) : null}
         <Pressable
-          style={({ pressed }) => [
-            styles.bookButton,
-            isBooked && styles.bookButtonBooked,
-            (!canBook || pressed || booking || isBooked) && styles.bookButtonDisabled,
-          ]}
+          style={({ pressed }) => {
+            const disabled = booking || isBooked;
+            return [
+              styles.bookButton,
+              isBooked && styles.bookButtonBooked,
+              pressed && !disabled && styles.bookButtonPressed,
+              disabled && styles.bookButtonDisabled,
+            ];
+          }}
           onPress={handleBook}
-          disabled={!canBook || booking || isBooked}
+          disabled={booking || isBooked}
         >
           {booking ? (
             <ActivityIndicator color="#FFF" size="small" />
@@ -347,7 +455,7 @@ export default function EventDetailScreen() {
             </View>
           )}
         </Pressable>
-      </ScrollView>
+      </Animated.ScrollView>
       {isFreeMember && price !== null && event && (
         <PaymentModal
           visible={showClassPaymentModal}
@@ -374,7 +482,7 @@ export default function EventDetailScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#fff7f2" },
+  container: { flex: 1, backgroundColor: colors.background },
   centered: { flex: 1, justifyContent: "center", alignItems: "center" },
   header: { 
     flexDirection: "row",
@@ -384,8 +492,8 @@ const styles = StyleSheet.create({
     paddingTop: 12,
     paddingBottom: 8,
     borderBottomWidth: 1, 
-    borderBottomColor: "#E8E0D5",
-    backgroundColor: "#fff7f2",
+    borderBottomColor: colors.borderSubtle,
+    backgroundColor: colors.background,
   },
   backButton: {
     padding: 8,
@@ -413,7 +521,7 @@ const styles = StyleSheet.create({
   scroll: { paddingBottom: 32 },
   heroImage: {
     width: "100%",
-    height: 250,
+    height: 260,
     backgroundColor: "#E8E0D5",
   },
   bookingBanner: {
@@ -450,43 +558,84 @@ const styles = StyleSheet.create({
     lineHeight: 20,
   },
   title: { 
-    fontSize: 22, 
-    fontWeight: "600", 
-    color: "#5C4A4A",
+    fontSize: 24, 
+    fontWeight: "700", 
+    color: colors.textPrimary,
     paddingHorizontal: 20,
-    marginTop: 8,
+    marginTop: 16,
   },
   meta: { 
     fontSize: 15, 
-    color: "#8B7355", 
+    color: colors.textSecondary, 
     marginTop: 6,
     paddingHorizontal: 20,
   },
-  location: { 
-    fontSize: 14, 
-    color: "#B8A99A", 
-    marginTop: 4,
+  tagsRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    flexWrap: "nowrap",
+    gap: 8,
+    marginTop: 10,
     paddingHorizontal: 20,
   },
-  price: {
-    fontSize: 15,
-    color: "#8B7355",
-    marginTop: 6,
+  tagPill: {
+    paddingHorizontal: 14,
+    paddingVertical: 6,
+    borderRadius: 999,
+    backgroundColor: colors.primarySoft,
+  },
+  tagPillText: {
+    fontSize: 13,
+    color: colors.textPrimary,
+    fontWeight: "600",
+  },
+  audienceTagPill: {
+    paddingHorizontal: 14,
+    paddingVertical: 6,
+    borderRadius: 999,
+    backgroundColor: "#FFE4D6",
+  },
+  audienceTagPillText: {
+    fontSize: 13,
+    color: colors.textSecondary,
+    fontWeight: "600",
+  },
+  infoRow: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 8,
+    marginTop: 10,
     paddingHorizontal: 20,
-    fontWeight: "500",
+  },
+  infoChip: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 999,
+    backgroundColor: "#FFF",
+    borderWidth: 1,
+    borderColor: colors.borderSubtle,
+    maxWidth: "100%",
+  },
+  infoChipText: {
+    fontSize: 13,
+    color: colors.textSecondary,
+    flexShrink: 1,
   },
   description: { 
     fontSize: 16, 
-    color: "#5C4A4A", 
+    color: colors.textPrimary, 
     lineHeight: 24, 
-    marginTop: 16,
+    marginTop: 18,
     paddingHorizontal: 20,
   },
   bookButton: {
     marginTop: 24,
     marginHorizontal: 20,
-    backgroundColor: "#A8C6B6",
-    borderRadius: 14,
+    backgroundColor: colors.primary,
+    borderRadius: 30,
     paddingVertical: 16,
     alignItems: "center",
     shadowColor: "#000",
@@ -498,8 +647,12 @@ const styles = StyleSheet.create({
   bookButtonBooked: {
     backgroundColor: "#4CAF50",
   },
+  bookButtonPressed: {
+    opacity: 0.9,
+    transform: [{ scale: 0.97 }],
+  },
   bookButtonDisabled: { 
-    opacity: 0.7,
+    opacity: 0.6,
     shadowOpacity: 0.05,
   },
   bookButtonContent: {
