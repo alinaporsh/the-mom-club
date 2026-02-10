@@ -18,6 +18,8 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "../../lib/supabase";
 import { useAuth, useCanPost, useIsAdmin } from "../../contexts/AuthContext";
 import { queryKeys } from "../../lib/queryClient";
+import { TagPill } from "../components/TagPill";
+import { inferTagsForPost } from "./tags";
 
 type Post = { id: string; title: string; body: string; created_at: string };
 type Comment = { id: string; body: string; created_at: string };
@@ -179,6 +181,8 @@ export default function ForumPostScreen() {
     );
   }
 
+  const postTags = inferTagsForPost(post.title, post.body).slice(0, 2);
+
   return (
     <SafeAreaView style={styles.container} edges={["top", "bottom"]}>
       <View style={styles.header}>
@@ -191,6 +195,13 @@ export default function ForumPostScreen() {
         <View style={styles.headerContent}>
           <View style={styles.headerText}>
             <Text style={styles.title} numberOfLines={2}>{post.title}</Text>
+            {postTags.length > 0 && (
+              <View style={styles.tagRow}>
+                {postTags.map((tag) => (
+                  <TagPill key={tag} label={tag} />
+                ))}
+              </View>
+            )}
             <View style={styles.dateContainer}>
               <Ionicons name="time-outline" size={12} color="#B8A99A" />
               <Text style={styles.date}>
@@ -324,7 +335,12 @@ const styles = StyleSheet.create({
     fontWeight: "700", 
     color: "#5C4A4A",
     lineHeight: 32,
-    marginBottom: 8,
+    marginBottom: 4,
+  },
+  tagRow: {
+    flexDirection: "row",
+    flexWrap: "nowrap",
+    marginBottom: 6,
   },
   dateContainer: {
     flexDirection: "row",

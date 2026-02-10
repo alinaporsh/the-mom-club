@@ -1,180 +1,195 @@
-import { useEffect, useState } from "react";
-import { Text, View, StyleSheet, FlatList, Pressable, ActivityIndicator } from "react-native";
-import { useRouter, useFocusEffect } from "expo-router";
+import { useState } from "react";
+import {
+  Text,
+  View,
+  StyleSheet,
+  FlatList,
+  Pressable,
+  TextInput,
+} from "react-native";
+import { useRouter } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
-import { useCallback } from "react";
-import { supabase } from "../../lib/supabase";
-import { useAuth, useCanPost } from "../../contexts/AuthContext";
+import { useAuth } from "../../contexts/AuthContext";
+import { useCommunityForum } from "../../contexts/CommunityForumContext";
+import { colors } from "../theme";
 
-type Post = { id: string; title: string; body: string; created_at: string };
-
-export default function ForumListScreen() {
+export default function CommunityListScreen() {
   const router = useRouter();
   const { state } = useAuth();
-  const canPost = useCanPost();
-  const isGuest = state.isGuest;
-  const [posts, setPosts] = useState<Post[]>([]);
-  const [loading, setLoading] = useState(true);
+  const { communities } = useCommunityForum();
+  const [query, setQuery] = useState("");
 
-  const fetchPosts = useCallback(async () => {
-    setLoading(true);
-    const { data, error } = await supabase
-      .from("forum_posts")
-      .select("id, title, body, created_at")
-      .order("created_at", { ascending: false });
-    if (!error) setPosts(data ?? []);
-    setLoading(false);
-  }, []);
+  const isGuest = state.isGuest || !state.session;
 
-  useEffect(() => {
-    fetchPosts();
-  }, [fetchPosts]);
-
-  // Refresh posts when screen comes into focus (e.g., after creating a new post)
-  useFocusEffect(
-    useCallback(() => {
-      fetchPosts();
-    }, [fetchPosts])
-  );
-
-  if (loading) {
+  const filtered = communities.filter((community) => {
+    if (!query.trim()) return true;
+    const q = query.toLowerCase();
     return (
-      <View style={styles.centered}>
-        <ActivityIndicator size="large" color="#8B7355" />
-      </View>
+      community.name.toLowerCase().includes(q) ||
+      community.description.toLowerCase().includes(q)
     );
-  }
+  });
 
   return (
     <SafeAreaView style={styles.container} edges={["top", "bottom"]}>
       <View style={styles.header}>
         <Text style={styles.headerTitle}>Forum</Text>
-        {canPost && (
-          <Pressable
-            style={({ pressed }) => [styles.newPostButton, pressed && styles.newPostButtonPressed]}
-            onPress={() => router.push("/forum/new")}
-          >
-            <Ionicons name="add-circle" size={20} color="#FFF" />
-            <Text style={styles.newPostButtonText}>New post</Text>
-          </Pressable>
-        )}
       </View>
-      {!canPost && isGuest && (
+
+      {isGuest && (
         <View style={styles.banner}>
-          <Ionicons name="information-circle-outline" size={18} color="#5C4A4A" />
-          <Text style={styles.bannerText}>Sign up for free to post and comment in the forum.</Text>
+          <Ionicons
+            name="information-circle-outline"
+            size={18}
+            color={colors.textPrimary}
+          />
+          <Text style={styles.bannerText}>
+            Sign up for free to post and comment in the forum.
+          </Text>
         </View>
       )}
-      {posts.length === 0 ? (
-        <View style={styles.centered}>
-          <Ionicons name="chatbubbles-outline" size={64} color="#B8A99A" />
-          <Text style={styles.empty}>No posts yet.</Text>
-          <Text style={styles.emptySubtext}>Be the first to start a conversation!</Text>
-        </View>
-      ) : (
-        <FlatList
-          data={posts}
-          keyExtractor={(item) => item.id}
-          contentContainerStyle={styles.list}
-          showsVerticalScrollIndicator={false}
-          renderItem={({ item }) => (
-            <Pressable
-              style={({ pressed }) => [styles.card, pressed && styles.cardPressed]}
-              onPress={() => router.push(`/forum/${item.id}`)}
-            >
-              <View style={styles.cardHeader}>
-                <View style={styles.cardIcon}>
-                  <Ionicons name="chatbubble-ellipses" size={20} color="#C4A77D" />
+
+      <View style={styles.searchContainer}>
+        <Ionicons name="search" size={18} color="#B8A99A" />
+        <TextInput
+          value={query}
+          onChangeText={setQuery}
+          placeholder="Search communities"
+          placeholderTextColor="#B8A99A"
+          style={styles.searchInput}
+        />
+      </View>
+
+      <FlatList
+        data={filtered}
+        keyExtractor={(item) => item.id}
+        contentContainerStyle={styles.list}
+        showsVerticalScrollIndicator={false}
+        renderItem={({ item }) => (
+          <Pressable
+            style={({ pressed }) => [
+              styles.card,
+              pressed && styles.cardPressed,
+            ]}
+            onPress={() => router.push(`/community/${item.id}`)}
+          >
+            <View style={styles.cardHeader}>
+              <View style={styles.cardIcon}>
+                <Ionicons name="chatbubbles" size={20} color="#C4A77D" />
+              </View>
+              <View style={styles.cardContent}>
+                <View style={styles.cardTitleRow}>
+                  <Text style={styles.cardTitle} numberOfLines={1}>
+                    {item.name}
+                  </Text>
+                  {item.isJoined && (
+                    <View style={styles.joinBadge}>
+                      <Text style={styles.joinBadgeText}>Joined</Text>
+                    </View>
+                  )}
                 </View>
-                <View style={styles.cardContent}>
-                  <Text style={styles.cardTitle} numberOfLines={2}>{item.title}</Text>
-                  <Text style={styles.cardBody} numberOfLines={3}>{item.body}</Text>
-                  <View style={styles.cardFooter}>
-                    <Ionicons name="time-outline" size={12} color="#B8A99A" />
-                    <Text style={styles.cardDate}>
-                      {new Date(item.created_at).toLocaleDateString([], {
-                        year: "numeric",
-                        month: "short",
-                        day: "numeric",
-                      })}
-                    </Text>
-                  </View>
+                <Text style={styles.cardBody} numberOfLines={2}>
+                  {item.description}
+                </Text>
+                <View style={styles.cardFooter}>
+                  <Ionicons
+                    name="people-outline"
+                    size={12}
+                    color="#B8A99A"
+                  />
+                  <Text style={styles.cardMeta}>
+                    {item.memberCount.toLocaleString()} members
+                  </Text>
                 </View>
               </View>
-            </Pressable>
-          )}
-        />
-      )}
+            </View>
+          </Pressable>
+        )}
+        ListEmptyComponent={
+          <View style={styles.emptyState}>
+            <Ionicons
+              name="chatbubbles-outline"
+              size={64}
+              color="#B8A99A"
+            />
+            <Text style={styles.emptyTitle}>No communities found</Text>
+            <Text style={styles.emptySubtitle}>
+              Try a different search term or clear the filter.
+            </Text>
+          </View>
+        }
+      />
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#fff7f2" },
+  container: { flex: 1, backgroundColor: colors.background },
   header: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
     paddingHorizontal: 20,
     paddingTop: 16,
-    paddingBottom: 12,
-    backgroundColor: "#fff7f2",
+    paddingBottom: 8,
+    backgroundColor: colors.background,
   },
   headerTitle: {
     fontSize: 28,
     fontWeight: "700",
-    color: "#5C4A4A",
+    color: colors.textPrimary,
   },
-  newPostButton: {
+  banner: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#A8C6B6",
-    paddingVertical: 10,
-    paddingHorizontal: 16,
-    borderRadius: 20,
-    gap: 6,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
+    gap: 8,
+    paddingHorizontal: 20,
+    paddingVertical: 12,
+    backgroundColor: "#FFFDF9",
+    borderBottomWidth: 1,
+    borderColor: "#E8E0D5",
   },
-  newPostButtonPressed: { opacity: 0.85 },
-  newPostButtonText: { fontSize: 15, fontWeight: "600", color: "#FFF" },
-  centered: { 
-    flex: 1, 
-    justifyContent: "center", 
-    alignItems: "center",
-    paddingHorizontal: 40,
-  },
-  empty: { 
-    fontSize: 18, 
-    fontWeight: "600",
-    color: "#8B7355",
-    marginTop: 16,
-  },
-  emptySubtext: {
+  bannerText: {
     fontSize: 14,
-    color: "#B8A99A",
-    marginTop: 8,
-    textAlign: "center",
+    color: colors.textPrimary,
+    flex: 1,
+    lineHeight: 20,
   },
-  list: { padding: 20, paddingTop: 8, paddingBottom: 100 },
+  searchContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginHorizontal: 20,
+    marginTop: 12,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    borderRadius: 16,
+    backgroundColor: "#FFFDF9",
+    borderWidth: 1,
+    borderColor: "#E8E0D5",
+    gap: 8,
+  },
+  searchInput: {
+    flex: 1,
+    fontSize: 15,
+    color: colors.textPrimary,
+  },
+  list: {
+    paddingHorizontal: 20,
+    paddingTop: 16,
+    paddingBottom: 32,
+  },
   card: {
     backgroundColor: "#FFFDF9",
     borderRadius: 16,
-    padding: 18,
-    marginBottom: 16,
+    padding: 16,
+    marginBottom: 14,
     borderWidth: 1,
     borderColor: "#E8E0D5",
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.08,
-    shadowRadius: 6,
+    shadowRadius: 4,
     elevation: 2,
   },
-  cardPressed: { 
+  cardPressed: {
     opacity: 0.95,
     transform: [{ scale: 0.98 }],
   },
@@ -189,50 +204,63 @@ const styles = StyleSheet.create({
     backgroundColor: "#F5F0EB",
     justifyContent: "center",
     alignItems: "center",
-    flexShrink: 0,
   },
   cardContent: {
     flex: 1,
   },
-  cardTitle: { 
-    fontSize: 18, 
-    fontWeight: "700", 
-    color: "#5C4A4A",
-    marginBottom: 8,
-    lineHeight: 24,
+  cardTitleRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    marginBottom: 4,
   },
-  cardBody: { 
-    fontSize: 15, 
-    color: "#8B7355", 
-    lineHeight: 22,
-    marginBottom: 12,
+  cardTitle: {
+    fontSize: 17,
+    fontWeight: "700",
+    color: colors.textPrimary,
+    flex: 1,
+    marginRight: 8,
+  },
+  joinBadge: {
+    borderRadius: 999,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    backgroundColor: colors.primarySoft,
+  },
+  joinBadgeText: {
+    fontSize: 11,
+    fontWeight: "600",
+    color: colors.textSecondary,
+  },
+  cardBody: {
+    fontSize: 14,
+    color: colors.textSecondary,
+    marginBottom: 8,
   },
   cardFooter: {
     flexDirection: "row",
     alignItems: "center",
     gap: 6,
   },
-  cardDate: { 
-    fontSize: 13, 
+  cardMeta: {
+    fontSize: 13,
     color: "#B8A99A",
-    fontWeight: "500",
   },
-  banner: { 
-    flexDirection: "row",
+  emptyState: {
+    marginTop: 80,
     alignItems: "center",
-    gap: 8,
-    padding: 14, 
-    backgroundColor: "#FFFDF9", 
-    marginHorizontal: 20, 
-    marginBottom: 12, 
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: "#E8E0D5",
+    paddingHorizontal: 32,
   },
-  bannerText: { 
-    fontSize: 14, 
-    color: "#5C4A4A",
-    flex: 1,
-    lineHeight: 20,
+  emptyTitle: {
+    fontSize: 18,
+    fontWeight: "600",
+    color: colors.textSecondary,
+    marginTop: 16,
+  },
+  emptySubtitle: {
+    fontSize: 14,
+    color: "#B8A99A",
+    textAlign: "center",
+    marginTop: 6,
   },
 });

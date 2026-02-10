@@ -145,13 +145,6 @@ const CardTagsAndMeta = memo(function CardTagsAndMeta({
     );
   }
 
-  const mode = getEffectiveAttendanceMode(event);
-  if (mode === "online") {
-    tags.push("Online");
-  } else if (mode === "in_person") {
-    tags.push("In person");
-  }
-
   const visibleTags = tags.slice(0, 2);
   const extraCount = tags.length - visibleTags.length;
 
@@ -208,7 +201,11 @@ const CardTagsAndMeta = memo(function CardTagsAndMeta({
           {event.location && (
             <View style={styles.cardMetaChip}>
               <Ionicons
-                name={mode === "online" ? "wifi-outline" : "location-outline"}
+                name={
+                  getEffectiveAttendanceMode(event) === "online"
+                    ? "wifi-outline"
+                    : "location-outline"
+                }
                 size={12}
                 color={colors.textSecondary}
               />
